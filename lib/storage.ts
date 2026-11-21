@@ -1,0 +1,94 @@
+import { deepMerge, type DeepPartial } from './types';
+
+export interface Settings {
+  jev: {
+    baseUrl: string;
+    apiKey: string;
+    /** Force deterministic mock responses even when a key is configured. */
+    mock: boolean;
+  };
+  sarvam: {
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+  };
+  gmail: {
+    clientId: string;
+    enabled: boolean;
+    lookbackDays: number;
+    maxMessages: number;
+    autoLabel: boolean;
+    priorityThreshold: number;
+  };
+  linkedin: {
+    enabled: boolean;
+    /** Posts scoring below this are blurred. */
+    threshold: number;
+    paused: boolean;
+  };
+  consent: {
+    dataSharingAccepted: boolean;
+  };
+}
+
+const env = import.meta.env as Record<string, string | undefined>;
+
+export const DEFAULT_SETTINGS: Settings = {
+  jev: {
+    baseUrl: env.WXT_JEV_BASE_URL ?? '',
+    apiKey: env.WXT_JEV_API_KEY ?? '',
+    mock: true,
+  },
+  sarvam: {
+    baseUrl: 'https://api.sarvam.ai/v2',
+    apiKey: env.WXT_SARVAM_API_KEY ?? '',
+    model: 'deepseekv4.1-flash-1017',
+  },
+  gmail: {
+    clientId: env.WXT_GMAIL_CLIENT_ID ?? '',
+    enabled: true,
+    lookbackDays: 7,
+    maxMessages: 200,
+    autoLabel: true,
+    priorityThreshold: 70,
+  },
+  linkedin: {
+    enabled: true,
+    threshold: 35,
+    paused: false,
+  },
+  consent: {
+    dataSharingAccepted: false,
+  },
+};
+
+const SETTINGS_KEY = 'jev.settings.v1';
+
+export async function getSettings(): Promise<Settings> {
+  const stored = await chrome.storage.local.get(SETTINGS_KEY);
+  const raw = stored[SETTINGS_KEY] as DeepPartial<Settings> | undefined;
+  return raw ? deepMerge(structuredClone(DEFAULT_SETTINGS), raw) : structuredClone(DEFAULT_SETTINGS);
+}
+
+export async function updateSettings(patch: DeepPartial<Settings>): Promise<Settings> {
+  const next = deepMerge(await getSettings(), patch);
+  await chrome.storage.local.set({ [SETTINGS_KEY]: next });
+  return next;
+}
+
+export function onSettingsChanged(callback: (settings: Settings) => void): () => void {
+  const listener = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    areaName: string,
+  ): void => {
+    if (areaName !== 'local' || !changes[SETTINGS_KEY]) return;
+    void getSettings().then(callback);
+  };
+  chrome.storage.onChanged.addListener(listener);
+  return () => chrome.storage.onChanged.removeListener(listener);
+}
+
+/** True when the Jev API is configured and mock mode is off. */
+export function isJevLive(settings: Settings): boolean {
+  return !settings.jev.mock && Boolean(settings.jev.baseUrl && settings.jev.apiKey);
+}

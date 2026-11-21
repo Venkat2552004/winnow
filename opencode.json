@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "sarvam/deepseekv4.1-flash-1017",
+  "providers": {
+    "sarvam": {
+      "name": "Sarvam AI",
+      "env": ["SARVAM_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://api.sarvam.ai/v2"
+      },
+      "models": {
+        "deepseekv4.1-flash-1017": {
+          "name": "DeepSeek V4.1 Flash 1017"
+        }
+      }
+    }
+  }
+}

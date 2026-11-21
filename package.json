@@ -1,0 +1,29 @@
+{
+  "name": "jev",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Jev — Gmail organizer and LinkedIn de-slop, in one Chrome extension.",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@wxt-dev/module-react": "^1.2.2",
+    "typescript": "^5.9.3",
+    "wxt": "^0.21.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
