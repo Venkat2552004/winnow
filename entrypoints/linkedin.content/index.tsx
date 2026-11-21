@@ -3,6 +3,7 @@ import type { PostScore } from '../../lib/jev/types';
 import {
   DIAGNOSE_MESSAGE,
   PROBE_MESSAGE,
+  RESET_MESSAGE,
   TEST_BLUR_MESSAGE,
   type LinkedInDiagnostics,
   type TestBlurResult,
@@ -44,9 +45,9 @@ export default defineContentScript({
 
     const queue = new TaskQueue(2);
     const scores = new Map<HTMLElement, PostScore>();
-    const pending = new WeakSet<HTMLElement>();
-    const revealed = new WeakSet<HTMLElement>();
-    const countedBlur = new WeakSet<HTMLElement>();
+    let pending = new WeakSet<HTMLElement>();
+    let revealed = new WeakSet<HTMLElement>();
+    let countedBlur = new WeakSet<HTMLElement>();
 
     const intersection = new IntersectionObserver(
       (entries) => {
@@ -212,6 +213,21 @@ export default defineContentScript({
 
       if (type === PROBE_MESSAGE) {
         sendResponse(probeDom());
+        return false;
+      }
+
+      if (type === RESET_MESSAGE) {
+        resetAll();
+        scores.clear();
+        pending = new WeakSet<HTMLElement>();
+        revealed = new WeakSet<HTMLElement>();
+        countedBlur = new WeakSet<HTMLElement>();
+        blurredCount = 0;
+        revealedCount = 0;
+        lastError = null;
+        lastSample = null;
+        scan();
+        sendResponse({ ok: true });
         return false;
       }
 

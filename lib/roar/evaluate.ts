@@ -1,7 +1,7 @@
 import type OpenAI from 'openai';
 import { describeHttpError, HttpError } from '../http';
 import { withRetry } from '../queue';
-import { errorMessage } from '../types';
+import { errorMessage, clamp } from '../types';
 import { ROAR_MODEL } from './config';
 
 /**
@@ -43,6 +43,9 @@ export interface EvaluateScoreAnswer {
   type: 'score';
   score: number;
   probabilities: Record<string, number>;
+  /** Roar's own confidence in the interpolated score, when provided. */
+  confidence?: number;
+  legend?: Record<string, string>;
 }
 
 export type EvaluateAnswer =
@@ -117,4 +120,26 @@ export function isTrue(
   threshold = 0.5,
 ): boolean {
   return answer?.type === 'boolean' && answer.probability >= threshold;
+}
+
+/** Best available confidence for an answer, normalized to 0-1. */
+export function answerConfidence(answer: EvaluateAnswer | undefined): number {
+  if (!answer) return 0;
+  if (answer.type === 'score') {
+    const maxProbability = Math.max(0, ...Object.values(answer.probabilities ?? {}));
+    return clamp(Math.max(answer.confidence ?? 0, maxProbability), 0, 1);
+  }
+  if (answer.type === 'choice') {
+    return clamp(Math.max(0, ...Object.values(answer.probabilities ?? {})), 0, 1);
+  }
+  return clamp(Math.abs(answer.probability - 0.5) * 2, 0, 1);
+}
+
+/** Probability of a specific choice option. */
+export function choiceProbability(
+  answer: EvaluateAnswer | undefined,
+  option: string,
+): number {
+  if (answer?.type !== 'choice') return 0;
+  return clamp(answer.probabilities[option] ?? 0, 0, 1);
 }

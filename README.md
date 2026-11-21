@@ -174,7 +174,9 @@ Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the
 4. **Popup → Developer tools → Test blur.** Blurs the first post with a fake score.
    - Test blur works, real scoring doesn't → extraction or API issue.
    - Test blur fails → the page selectors need updating (`lib/linkedin/dom.ts`).
-5. **Check the console** for `[jev]` logs (enable debug first).
+5. **Popup → Developer tools → Test AI.** Sends one real email and one real post to the configured provider. The toast shows the provider, model, category, priority, and post score — or the exact error.
+6. **Clear stale scores.** Popup → **Clear cache**. This also tells the open LinkedIn tab to drop its in-memory scores and re-scan. Old scores are cached for 24 hours; the cache key is versioned so a scoring change invalidates them automatically.
+7. **Check the console** for `[jev]` logs (enable debug first).
 
 Leave **Mock mode** on to use local heuristics. Sarvam is still used for posts the local heuristics can't confidently judge.
 
@@ -196,3 +198,5 @@ Leave **Mock mode** on to use local heuristics. Sarvam is still used for posts t
 - **Sarvam rejected the credentials** — verify the key and model in Settings.
 - **Roar AI rejected the credentials** — check `ROAR_API_KEY` in `.env`, then rebuild the extension.
 - **Everything scores 55** — mock mode is on and no heuristic matched. Turn off **Mock mode** to use the gateway.
+- **Everything scores 50 / "Scoring unavailable"** — the gateway call failed and no heuristic matched. Open **Popup → Developer tools → Test AI** to see the exact error, then **Clear cache** and reload the LinkedIn tab. Failures are no longer cached, so the next scroll retries.
+- **Scores look stale after changing the model** — the cache key is versioned, but an open LinkedIn tab keeps scores in memory. Click **Clear cache** or reload the tab.

@@ -15,8 +15,10 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 ## AI layer (mock mode)
 
 - [ ] Mock mode is on by default.
-- [ ] **Clear cached scores** reports success.
+- [ ] **Clear cached scores** reports success and re-scores an open LinkedIn tab.
 - [ ] With no Jev base URL/key, classification still works from heuristics.
+- [ ] **Popup → Developer tools → Test AI** returns a provider, model, email category/priority, and post score.
+- [ ] With a live key, obvious bait scores low and a technical/insightful post scores high — not everything at 50.
 
 ## LinkedIn de-slop
 
@@ -29,6 +31,7 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] Disabling the feature removes all blurs.
 - [ ] Today's stats increment as you scroll.
 - [ ] **Test blur** blurs the first post.
+- [ ] **Test AI** returns a real score without an error.
 - [ ] **DOM probe** returns JSON with `listItems` and `activityLinks`.
 - [ ] Debug overlay pill appears when enabled.
 

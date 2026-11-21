@@ -4,6 +4,7 @@ import { CATEGORY_SHORT } from '../../lib/jev/types';
 import {
   DIAGNOSE_MESSAGE,
   PROBE_MESSAGE,
+  RESET_MESSAGE,
   TEST_BLUR_MESSAGE,
   type LinkedInDiagnostics,
   type TestBlurResult,
@@ -92,7 +93,14 @@ export default function App() {
   async function clearCache(): Promise<void> {
     try {
       await sendMessage({ type: 'cache:clear' });
-      setToast({ kind: 'ok', text: 'Cache cleared' });
+      // Ask the open LinkedIn tab to drop its in-memory scores and re-scan.
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id && tab.url?.includes('linkedin.com')) {
+        await chrome.tabs
+          .sendMessage(tab.id, { type: RESET_MESSAGE })
+          .catch(() => undefined);
+      }
+      setToast({ kind: 'ok', text: 'Cache cleared — LinkedIn posts will re-score' });
     } catch (error) {
       setToast({ kind: 'err', text: errorMessage(error) });
     }
@@ -154,6 +162,19 @@ export default function App() {
       setProbe(result);
     } catch (error) {
       setDiagError(errorMessage(error));
+    }
+  }
+
+  async function testAi(): Promise<void> {
+    setToast(null);
+    try {
+      const result = await sendMessage({ type: 'jev:test' });
+      setToast({
+        kind: 'ok',
+        text: `${result.provider}/${result.model} · email ${result.email.category} ${result.email.priority} · post ${result.post.score}`,
+      });
+    } catch (error) {
+      setToast({ kind: 'err', text: errorMessage(error) });
     }
   }
 
@@ -376,6 +397,10 @@ export default function App() {
               Test blur
             </button>
           </div>
+
+          <button className="btn" onClick={() => void testAi()}>
+            Test AI
+          </button>
 
           <button className="btn" onClick={() => void runProbe()}>
             DOM probe

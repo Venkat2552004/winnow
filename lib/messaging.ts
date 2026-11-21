@@ -19,6 +19,7 @@ export type Request =
   | { type: 'settings:update'; patch: DeepPartial<Settings> }
   | { type: 'jev:classifyEmail'; input: EmailInput }
   | { type: 'jev:scorePost'; input: PostInput }
+  | { type: 'jev:test' }
   | { type: 'cache:clear' }
   | { type: 'gmail:status' }
   | { type: 'gmail:connect' }
@@ -39,6 +40,12 @@ export interface ResponseMap {
   'settings:update': Settings;
   'jev:classifyEmail': EmailClassification;
   'jev:scorePost': PostScore;
+  'jev:test': {
+    email: EmailClassification;
+    post: PostScore;
+    provider: 'mock' | 'jev' | 'roar';
+    model: string;
+  };
   'cache:clear': { cleared: true };
   'gmail:status': GmailStatus;
   'gmail:connect': { email: string | null };

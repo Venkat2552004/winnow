@@ -12,7 +12,7 @@ export type EmailCategory =
   | 'promotion'
   | 'other';
 
-export type ClassificationSource = 'jev' | 'roar' | 'sarvam' | 'heuristic' | 'mock';
+export type ClassificationSource = 'jev' | 'roar' | 'sarvam' | 'heuristic' | 'mock' | 'error';
 
 /** Categories that must never be auto-archived and always get a priority floor. */
 export const IMPORTANT_CATEGORIES: readonly EmailCategory[] = [

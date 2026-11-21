@@ -19,10 +19,10 @@ import {
 import { scanUnsubscribes } from '../lib/gmail/senders';
 import { performUnsubscribe } from '../lib/gmail/unsubscribe';
 import type { Envelope, Handlers, Request } from '../lib/messaging';
-import { resolveJevConfig } from '../lib/jev/client';
+import { createJevClient, resolveJevConfig } from '../lib/jev/client';
 import { classifyEmail, scorePost } from '../lib/pipeline';
 import { TaskQueue } from '../lib/queue';
-import { isRoarBaseUrl } from '../lib/roar/config';
+import { isRoarBaseUrl, ROAR_MODEL } from '../lib/roar/config';
 import { getSettings, updateSettings } from '../lib/storage';
 import { errorMessage } from '../lib/types';
 
@@ -66,6 +66,34 @@ export default defineBackground(() => {
     'settings:update': ({ patch }) => updateSettings(patch),
     'jev:classifyEmail': async ({ input }) => classifyEmail(input, await getSettings()),
     'jev:scorePost': async ({ input }) => scorePost(input, await getSettings()),
+    'jev:test': async () => {
+      const settings = await getSettings();
+      const jev = createJevClient(settings.jev);
+      const resolved = resolveJevConfig(settings.jev);
+      const provider =
+        jev.mode === 'mock' ? 'mock' : isRoarBaseUrl(resolved.baseUrl) ? 'roar' : 'jev';
+
+      const email = await jev.classifyEmail({
+        id: 'jev-test-email',
+        from: 'billing@stripe.com',
+        subject: 'Your invoice for November is ready',
+        snippet: 'Invoice #1042 for $49.00 is due on 30 November.',
+        hasListUnsubscribe: false,
+        receivedAt: new Date().toISOString(),
+      });
+
+      const post = await jev.scorePost({
+        urn: 'urn:li:jev:test',
+        author: 'Jev test',
+        text: 'We migrated 40 services to Postgres 17 over six months. The biggest win was deleting 12,000 lines of ORM code. Here is the migration plan we used, including the rollback steps.',
+        isRepost: false,
+        hasMedia: false,
+        likes: 10,
+        comments: 2,
+      });
+
+      return { email, post, provider, model: ROAR_MODEL };
+    },
     'cache:clear': async () => {
       await cacheClear();
       return { cleared: true };
