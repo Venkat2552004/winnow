@@ -100,12 +100,17 @@ export default defineContentScript({
       if (!settings || revealed.has(element)) return;
 
       if (score.score < settings.linkedin.threshold) {
-        const added = blurPost(element, score, () => {
-          revealed.add(element);
-          revealedCount += 1;
-          void bumpStats({ revealed: 1 });
-          renderPill();
-        });
+        const added = blurPost(
+          element,
+          score,
+          () => {
+            revealed.add(element);
+            revealedCount += 1;
+            void bumpStats({ revealed: 1 });
+            renderPill();
+          },
+          getUrn(element) ?? 'jev-post',
+        );
         if (added && !countedBlur.has(element)) {
           countedBlur.add(element);
           blurredCount += 1;
@@ -223,8 +228,9 @@ export default defineContentScript({
           reason: 'Diagnostic test blur',
           source: 'heuristic',
         };
-        blurPost(first, fake, () => undefined);
-        sendResponse({ ok: true, urn: getUrn(first) ?? 'unknown' } satisfies TestBlurResult);
+        const urn = getUrn(first) ?? 'unknown';
+        blurPost(first, fake, () => undefined, urn);
+        sendResponse({ ok: true, urn } satisfies TestBlurResult);
         return false;
       }
 

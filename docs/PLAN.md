@@ -242,6 +242,7 @@ Authorization: Bearer <jev_key>
 | **4 — Gmail classify + label** ✅ | Pre-filter, Jev classification, label creation, `batchModify`, idempotency, priority panel. | 1.5 d |
 | **5 — Unsubscribe + cleanup** ✅ | `List-Unsubscribe` parsing, one-click POST + optional permission, mailto fallback, bulk-sender aggregation, archive-all with confirmation. | 1 d |
 | **6 — Polish** ✅ | Error/rate-limit states, cache eviction, consent notice, README + manual test checklist. | 1 d |
+| **7 — Generative identity** ✅ | Seeded signal marks, aurora headers, category hues, score rings, sender avatars, LinkedIn overlay redesign. | 1 d |
 
 **Total: ~7 working days.** Phases 2 and 3 are independent and can be built in parallel.
 

@@ -7,7 +7,7 @@ A Chrome extension that does two things:
 
 Both use the **Jev API** as the primary classifier, with **Sarvam** as a fallback for low-confidence results. Until the Jev API is live, the extension runs in **mock mode** using deterministic local heuristics — every feature works end to end.
 
-Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Manual test checklist: [`docs/TESTING.md`](docs/TESTING.md).
+Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Visual system: [`docs/DESIGN.md`](docs/DESIGN.md). Manual test checklist: [`docs/TESTING.md`](docs/TESTING.md).
 
 ## Status
 
@@ -20,6 +20,19 @@ Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Manual test checklist: 
 | 4 — Gmail classify + label | ✅ done (preview, Jev/* labels, batchModify, priority inbox) |
 | 5 — Unsubscribe + cleanup | ✅ done (List-Unsubscribe, one-click POST, bulk archive/trash) |
 | 6 — Polish | ✅ done (retries, cache eviction, onboarding, icons, docs) |
+| 7 — Generative identity | ✅ done (seeded signals, auroras, avatars, score rings) |
+
+## Design
+
+Jev's look is **procedural**: every waveform, gradient, avatar, and score ring is derived from a stable seed — a message ID, sender email, post URN, or section name. The same item always draws the same mark, with no images to ship and no model call.
+
+- **Signal marks** — a seeded five-bar waveform identifies each feature.
+- **Auroras** — seeded mesh gradients behind the popup and settings headers.
+- **Category hues** — security is red, bank green, invoices amber, travel cyan, legal violet.
+- **Score rings** — a red → amber → green ramp with the number always visible.
+- **Sender avatars** — seeded gradient circles with initials.
+
+See [`docs/DESIGN.md`](docs/DESIGN.md) for the primitives, seeds, and how to extend them.
 
 ## Setup
 
@@ -91,7 +104,7 @@ The popup shows the top priority mail (score ≥ your threshold) with a direct l
 
 ### LinkedIn
 
-Scroll the feed. Posts scoring below the threshold are blurred with a `Low value · score · click to reveal` overlay. Click to reveal; the score badge stays visible on hover. The popup shows today's scored / blurred / revealed counts.
+Scroll the feed. Posts scoring below the threshold are blurred behind a reveal card showing the score ring, the reason, and a **Reveal post** button. After revealing, a compact `Jev <score>` badge stays on the post. The popup shows today's scored / blurred / revealed counts.
 
 ## Scripts
 
@@ -120,7 +133,7 @@ lib/
   cache.ts             IndexedDB cache with eviction
   queue.ts             concurrency + retry
   http.ts              HTTP error classification
-  ui/                  shared UI (error boundary)
+  ui/                  generative primitives, score ring, avatars, error boundary
   storage.ts           typed settings
   messaging.ts         typed runtime messages
 ```

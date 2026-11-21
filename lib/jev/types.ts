@@ -55,6 +55,22 @@ export const CATEGORY_LABEL: Record<EmailCategory, string> = {
   other: 'Other',
 };
 
+/** Compact labels for narrow surfaces like the popup. */
+export const CATEGORY_SHORT: Record<EmailCategory, string> = {
+  security_alert: 'Security',
+  bank_statement: 'Bank',
+  invoice: 'Invoice',
+  travel: 'Travel',
+  legal: 'Legal',
+  action_required: 'Action',
+  personal: 'Personal',
+  receipt: 'Receipt',
+  notification: 'Notice',
+  newsletter: 'News',
+  promotion: 'Promo',
+  other: 'Other',
+};
+
 /** Gmail label path for each category. Nested paths create nested labels. */
 export const CATEGORY_GMAIL_LABEL: Record<EmailCategory, string> = {
   security_alert: 'Jev/Security',

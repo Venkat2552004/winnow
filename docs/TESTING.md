@@ -65,6 +65,18 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] **Archive** removes `INBOX` only; mail remains in All Mail.
 - [ ] **Trash** asks for confirmation and moves mail to Trash.
 
+## Visual system
+
+- [ ] Popup header shows the aurora backdrop and the brand signal mark.
+- [ ] Priority rows show a category dot, a short category label, and a score ring.
+- [ ] Settings sections each show a signal mark; Gmail, unsubscribe, and LinkedIn cards have a seeded glow.
+- [ ] Sender rows show seeded gradient avatars with initials.
+- [ ] Cleanup rows show seeded avatars and score rings.
+- [ ] LinkedIn blur overlay shows the score ring, signal mark, reason, and **Reveal post**.
+- [ ] Revealing a post leaves a `Jev <score>` badge.
+- [ ] With **Reduce motion** enabled in the OS, the aurora drift and transitions stop.
+- [ ] The same sender/post keeps the same colours after a reload.
+
 ## Error handling
 
 - [ ] Invalid Jev key → clear credentials error, then heuristic fallback.

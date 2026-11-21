@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import type {
   CleanupMode,
   CleanupPreview,
@@ -7,11 +7,42 @@ import type {
   OrganizeRow,
   UnsubscribeSender,
 } from '../../lib/gmail/types';
+import { CATEGORY_LABEL } from '../../lib/jev/types';
 import { sendMessage } from '../../lib/messaging';
 import { getSettings, updateSettings, type Settings } from '../../lib/storage';
 import { errorMessage } from '../../lib/types';
+import { Aurora } from '../../lib/ui/Aurora';
+import { ScoreRing } from '../../lib/ui/ScoreRing';
+import { SignalAvatar } from '../../lib/ui/SignalAvatar';
+import { SignalMark } from '../../lib/ui/SignalMark';
+import { categoryHue, glowVars } from '../../lib/ui/generative';
 
 type Toast = { kind: 'ok' | 'err'; text: string };
+
+const vars = (values: Record<string, string | number>): CSSProperties =>
+  values as CSSProperties;
+
+function SectionHead({
+  seed,
+  hue,
+  title,
+  subtitle,
+}: {
+  seed: string;
+  hue: number;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="section-head">
+      <SignalMark seed={seed} hue={hue} size={22} bars={5} />
+      <div>
+        <h2>{title}</h2>
+        <p className="muted small">{subtitle}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [draft, setDraft] = useState<Settings | null>(null);
@@ -317,18 +348,24 @@ export default function App() {
 
   return (
     <div className="stack" style={{ gap: 20 }}>
-      <header className="row">
-        <div>
-          <h1>Jev settings</h1>
-          <p className="muted small">Keys stay in this browser. Nothing is committed to the repo.</p>
-        </div>
-        <div className="row" style={{ gap: 8 }}>
-          <button className="btn" onClick={() => void testConnection()} disabled={testing}>
-            {testing ? 'Testing…' : 'Test connection'}
-          </button>
-          <button className="btn primary" onClick={() => void save()} disabled={!dirty}>
-            Save
-          </button>
+      <header className="card app-header">
+        <Aurora seed="jev-options-header" hue={228} />
+        <div className="app-header__content">
+          <div className="brand">
+            <SignalMark seed="jev-brand" size={30} bars={5} title="Jev" />
+            <div>
+              <h1>Jev settings</h1>
+              <p className="brand__tag">Keys stay in this browser</p>
+            </div>
+          </div>
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn" onClick={() => void testConnection()} disabled={testing}>
+              {testing ? 'Testing…' : 'Test connection'}
+            </button>
+            <button className="btn primary" onClick={() => void save()} disabled={!dirty}>
+              Save
+            </button>
+          </div>
         </div>
       </header>
 
@@ -336,50 +373,53 @@ export default function App() {
 
       {!draft.consent.dataSharingAccepted && (
         <section className="card section onboarding">
-          <div>
-            <h2>Welcome to Jev</h2>
-            <p className="muted small">
-              Two tools in one extension: a Gmail organizer and a LinkedIn feed filter.
-              Everything runs locally except the classification calls described below.
-            </p>
-          </div>
-          <ul className="checklist">
-            <li>
-              <strong>Gmail</strong> — reads sender, subject, and snippet; applies Jev/* labels;
-              archives or trashes only when you click.
-            </li>
-            <li>
-              <strong>LinkedIn</strong> — reads visible post text and blurs low-value posts
-              locally.
-            </li>
-            <li>
-              <strong>AI</strong> — email metadata and post text go to the Jev API, and to Sarvam
-              when the fallback is used. Full email bodies never leave the browser.
-            </li>
-          </ul>
-          <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
-            <input
-              type="checkbox"
-              checked={draft.consent.dataSharingAccepted}
-              onChange={(event) => setConsent({ dataSharingAccepted: event.target.checked })}
-            />
-            <span className="small">I understand and accept this data sharing.</span>
-          </label>
-          <div className="row">
-            <button className="btn primary" onClick={() => void save()} disabled={!dirty}>
-              Save &amp; continue
-            </button>
+          <Aurora seed="jev-onboarding" hue={252} />
+          <div className="onboarding__content">
+            <div>
+              <h2>Welcome to Jev</h2>
+              <p className="muted small">
+                Two tools in one extension: a Gmail organizer and a LinkedIn feed filter.
+                Everything runs locally except the classification calls described below.
+              </p>
+            </div>
+            <ul className="checklist">
+              <li>
+                <strong>Gmail</strong> — reads sender, subject, and snippet; applies Jev/* labels;
+                archives or trashes only when you click.
+              </li>
+              <li>
+                <strong>LinkedIn</strong> — reads visible post text and blurs low-value posts
+                locally.
+              </li>
+              <li>
+                <strong>AI</strong> — email metadata and post text go to the Jev API, and to Sarvam
+                when the fallback is used. Full email bodies never leave the browser.
+              </li>
+            </ul>
+            <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={draft.consent.dataSharingAccepted}
+                onChange={(event) => setConsent({ dataSharingAccepted: event.target.checked })}
+              />
+              <span className="small">I understand and accept this data sharing.</span>
+            </label>
+            <div className="row">
+              <button className="btn primary" onClick={() => void save()} disabled={!dirty}>
+                Save &amp; continue
+              </button>
+            </div>
           </div>
         </section>
       )}
 
       <section className="card section">
-        <div>
-          <h2>Jev API</h2>
-          <p className="muted small">
-            Primary classifier. With mock mode on, deterministic local rules stand in for the API.
-          </p>
-        </div>
+        <SectionHead
+          seed="jev-api"
+          hue={230}
+          title="Jev API"
+          subtitle="Primary classifier. Mock mode uses deterministic local rules."
+        />
         <div className="field">
           <label htmlFor="jev-base">Base URL</label>
           <input
@@ -417,12 +457,12 @@ export default function App() {
       </section>
 
       <section className="card section">
-        <div>
-          <h2>Sarvam fallback</h2>
-          <p className="muted small">
-            Used only when Jev is unavailable or returns low confidence.
-          </p>
-        </div>
+        <SectionHead
+          seed="jev-sarvam"
+          hue={268}
+          title="Sarvam fallback"
+          subtitle="Used only when Jev is unavailable or returns low confidence."
+        />
         <div className="grid-2">
           <div className="field">
             <label htmlFor="sarvam-base">Base URL</label>
@@ -453,12 +493,14 @@ export default function App() {
         </div>
       </section>
 
-      <section className="card section">
+      <section className="card card--glow section" style={vars(glowVars('jev-gmail', 212))}>
         <div className="row">
-          <div>
-            <h2>Gmail organizer</h2>
-            <p className="muted small">Auto-label recent mail and build a priority view.</p>
-          </div>
+          <SectionHead
+            seed="jev-gmail"
+            hue={212}
+            title="Gmail organizer"
+            subtitle="Auto-label recent mail and build a priority view."
+          />
           <label className="switch">
             <input
               type="checkbox"
@@ -570,30 +612,24 @@ export default function App() {
               }{' '}
               priority
             </p>
-            {previewRows.slice(0, 50).map((row) => (
-              <div
-                key={row.message.id}
-                className="row"
-                style={{ gap: 8, alignItems: 'baseline' }}
-                title={`${row.classification.reason}\n${row.labelNames.join(', ')}`}
-              >
-                <span
-                  className="small"
-                  style={{
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
+            {previewRows.slice(0, 50).map((row) => {
+              const hue = categoryHue(row.classification.category);
+              return (
+                <div
+                  key={row.message.id}
+                  className="priority-row"
+                  style={vars({ '--row-hue': hue })}
+                  title={`${row.classification.reason}\n${row.labelNames.join(', ')}`}
                 >
-                  {row.message.subject}
-                </span>
-                <span className="badge">{row.classification.category}</span>
-                <span className="small muted" style={{ width: 28, textAlign: 'right' }}>
-                  {row.classification.priority}
-                </span>
-              </div>
-            ))}
+                  <span className="dot" style={vars({ '--dot-hue': hue })} />
+                  <span className="priority-row__subject">{row.message.subject}</span>
+                  <span className="badge" data-hue style={vars({ '--badge-hue': hue })}>
+                    {CATEGORY_LABEL[row.classification.category]}
+                  </span>
+                  <ScoreRing score={row.classification.priority} size={26} hue={hue} />
+                </div>
+              );
+            })}
             {previewRows.length > 50 && (
               <p className="small muted">Showing top 50 of {previewRows.length}</p>
             )}
@@ -670,14 +706,13 @@ export default function App() {
         </div>
       </section>
 
-      <section className="card section">
-        <div>
-          <h2>Unsubscribe &amp; cleanup</h2>
-          <p className="muted small">
-            Uses each sender&apos;s List-Unsubscribe header. One-click requests are sent directly;
-            other links open in a background tab for you to confirm.
-          </p>
-        </div>
+      <section className="card card--glow section" style={vars(glowVars('jev-unsubscribe', 172))}>
+        <SectionHead
+          seed="jev-unsubscribe"
+          hue={172}
+          title="Unsubscribe & cleanup"
+          subtitle="One-click requests are sent directly; other links open in a background tab."
+        />
 
         <div className="row" style={{ gap: 8 }}>
           <button
@@ -714,37 +749,31 @@ export default function App() {
 
         {senders && senders.length > 0 && (
           <div className="stack" style={{ gap: 6 }}>
-            {senders.map((sender) => (
-              <label
-                key={sender.email}
-                className="row"
-                style={{ gap: 8, alignItems: 'baseline', cursor: 'pointer' }}
-                title={sender.sampleSubject}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedSenders.has(sender.email)}
-                  onChange={() => toggleSender(sender.email)}
-                />
-                <span
-                  className="small"
-                  style={{
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
+            {senders.map((sender) => {
+              const hue = sender.oneClick ? 152 : sender.https ? 194 : 38;
+              return (
+                <label
+                  key={sender.email}
+                  className="priority-row"
+                  style={{ ...vars({ '--row-hue': hue }), cursor: 'pointer' }}
+                  title={sender.sampleSubject}
                 >
-                  {sender.name}
-                </span>
-                <span className="badge">
-                  {sender.oneClick ? 'one-click' : sender.https ? 'link' : 'mailto'}
-                </span>
-                <span className="small muted" style={{ width: 28, textAlign: 'right' }}>
-                  {sender.count}
-                </span>
-              </label>
-            ))}
+                  <input
+                    type="checkbox"
+                    checked={selectedSenders.has(sender.email)}
+                    onChange={() => toggleSender(sender.email)}
+                  />
+                  <SignalAvatar seed={sender.email} label={sender.name} size={22} hue={hue} />
+                  <span className="priority-row__subject">{sender.name}</span>
+                  <span className="badge" data-hue style={vars({ '--badge-hue': hue })}>
+                    {sender.oneClick ? 'one-click' : sender.https ? 'link' : 'mailto'}
+                  </span>
+                  <span className="small muted" style={{ width: 28, textAlign: 'right' }}>
+                    {sender.count}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         )}
 
@@ -754,13 +783,12 @@ export default function App() {
 
         <div className="divider" />
 
-        <div>
-          <h2>Bulk cleanup</h2>
-          <p className="muted small">
-            Promotions, newsletters, and notifications older than the cleanup age. Starred and
-            important mail is never touched.
-          </p>
-        </div>
+        <SectionHead
+          seed="jev-cleanup"
+          hue={38}
+          title="Bulk cleanup"
+          subtitle="Aged promotions, newsletters, and notifications. Starred and important mail is never touched."
+        />
 
         <div className="field">
           <label htmlFor="gmail-cleanup-days">Cleanup age (days)</label>
@@ -803,27 +831,24 @@ export default function App() {
             <p className="small muted">
               {cleanup.total} candidates older than {cleanup.olderThanDays} days
             </p>
-            {cleanup.candidates.slice(0, 30).map((candidate) => (
-              <div
-                key={candidate.id}
-                className="row"
-                style={{ gap: 8, alignItems: 'baseline' }}
-                title={candidate.from}
-              >
-                <span
-                  className="small"
-                  style={{
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
+            {cleanup.candidates.slice(0, 30).map((candidate) => {
+              const hue = categoryHue(candidate.category);
+              return (
+                <div
+                  key={candidate.id}
+                  className="priority-row"
+                  style={vars({ '--row-hue': hue })}
+                  title={candidate.from}
                 >
-                  {candidate.subject}
-                </span>
-                <span className="badge">{candidate.category}</span>
-              </div>
-            ))}
+                  <SignalAvatar seed={candidate.from} label={candidate.from} size={22} hue={hue} />
+                  <span className="priority-row__subject">{candidate.subject}</span>
+                  <span className="badge" data-hue style={vars({ '--badge-hue': hue })}>
+                    {CATEGORY_LABEL[candidate.category]}
+                  </span>
+                  <ScoreRing score={candidate.priority} size={24} hue={hue} />
+                </div>
+              );
+            })}
             {cleanup.total > 30 && (
               <p className="small muted">Showing 30 of {cleanup.total}</p>
             )}
@@ -831,12 +856,14 @@ export default function App() {
         )}
       </section>
 
-      <section className="card section">
+      <section className="card card--glow section" style={vars(glowVars('jev-linkedin', 194))}>
         <div className="row">
-          <div>
-            <h2>LinkedIn de-slop</h2>
-            <p className="muted small">Blur posts that score below the threshold.</p>
-          </div>
+          <SectionHead
+            seed="jev-linkedin"
+            hue={194}
+            title="LinkedIn de-slop"
+            subtitle="Blur posts that score below the threshold."
+          />
           <label className="switch">
             <input
               type="checkbox"
@@ -897,13 +924,12 @@ export default function App() {
       </section>
 
       <section className="card section">
-        <div>
-          <h2>Privacy</h2>
-          <p className="muted small">
-            Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the Jev API,
-            and to Sarvam when the fallback is used. Full email bodies are never sent. No analytics.
-          </p>
-        </div>
+        <SectionHead
+          seed="jev-privacy"
+          hue={268}
+          title="Privacy"
+          subtitle="Metadata and post text go to Jev, and to Sarvam when the fallback is used. Full email bodies never leave the browser."
+        />
         <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
           <input
             type="checkbox"

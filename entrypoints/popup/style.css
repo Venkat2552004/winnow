@@ -1,7 +1,54 @@
 body {
-  width: 340px;
+  width: 348px;
+  min-height: 200px;
 }
 
 #root {
-  padding: 14px;
+  padding: 12px;
+}
+
+/* The popup is short and scrolls; keep the scrollbar from shifting layout. */
+html {
+  scrollbar-gutter: stable;
+}
+
+.app-header {
+  border-radius: var(--radius-lg);
+}
+
+.priority-row {
+  padding: 7px 8px;
+}
+
+.priority-row__subject {
+  font-size: 12px;
+}
+
+.priority-row .badge {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.stat__value {
+  font-size: 17px;
+}
+
+details > summary {
+  list-style: none;
+  user-select: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 140ms ease;
+}
+
+details[open] > summary::before {
+  transform: rotate(90deg);
 }
