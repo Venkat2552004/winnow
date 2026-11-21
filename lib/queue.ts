@@ -22,21 +22,30 @@ export class TaskQueue {
   }
 }
 
+export interface RetryOptions {
+  attempts?: number;
+  baseDelayMs?: number;
+  /** Return false to fail fast (e.g. on 401). Defaults to retrying everything. */
+  shouldRetry?: (error: unknown) => boolean;
+}
+
 export async function withRetry<T>(
   task: () => Promise<T>,
-  attempts = 3,
-  baseDelayMs = 400,
+  options: RetryOptions = {},
 ): Promise<T> {
+  const { attempts = 3, baseDelayMs = 400, shouldRetry = () => true } = options;
   let lastError: unknown;
+
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       return await task();
     } catch (error) {
       lastError = error;
-      if (attempt < attempts - 1) {
-        await new Promise((resolve) => setTimeout(resolve, baseDelayMs * 2 ** attempt));
-      }
+      const isLast = attempt >= attempts - 1;
+      if (isLast || !shouldRetry(error)) break;
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * 2 ** attempt));
     }
   }
+
   throw lastError;
 }

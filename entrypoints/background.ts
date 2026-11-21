@@ -1,5 +1,5 @@
 import { defineBackground } from 'wxt/utils/define-background';
-import { cacheClear } from '../lib/cache';
+import { cacheClear, cachePrune } from '../lib/cache';
 import { getMessageMeta, GmailApiError, listMessageIds, batchModify } from '../lib/gmail/api';
 import {
   clearToken,
@@ -27,6 +27,9 @@ import { errorMessage } from '../lib/types';
 const metadataQueue = new TaskQueue(5);
 
 export default defineBackground(() => {
+  // Trim stale cache entries whenever the worker starts.
+  void cachePrune().catch(() => undefined);
+
   async function withGmailToken<T>(run: (token: string) => Promise<T>): Promise<T> {
     const settings = await getSettings();
     if (!settings.gmail.clientId) {

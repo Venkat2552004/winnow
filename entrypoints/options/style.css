@@ -25,6 +25,24 @@ body {
   gap: 12px;
 }
 
+.onboarding {
+  border-color: var(--accent);
+}
+
+.checklist {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.checklist strong {
+  color: var(--text);
+}
+
 @media (max-width: 560px) {
   .grid-2 {
     grid-template-columns: 1fr;

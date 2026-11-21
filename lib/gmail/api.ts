@@ -1,3 +1,5 @@
+import { describeHttpError } from '../http';
+import { withRetry } from '../queue';
 import { errorMessage } from '../types';
 import type { GmailLabel, GmailMessageMeta } from './types';
 
@@ -11,9 +13,17 @@ export class GmailApiError extends Error {
     super(message);
     this.name = 'GmailApiError';
   }
+
+  get retryable(): boolean {
+    return this.status === 0 || this.status === 429 || this.status >= 500;
+  }
 }
 
-async function request<T>(token: string, path: string, init?: RequestInit): Promise<T> {
+async function requestOnce<T>(
+  token: string,
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${BASE}${path}`, {
@@ -34,12 +44,19 @@ async function request<T>(token: string, path: string, init?: RequestInit): Prom
     const detail = await response.text().catch(() => '');
     throw new GmailApiError(
       response.status,
-      `Gmail API ${response.status}${detail ? `: ${detail.slice(0, 300)}` : ''}`,
+      describeHttpError('Gmail API', response.status, detail),
     );
   }
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+function request<T>(token: string, path: string, init?: RequestInit): Promise<T> {
+  return withRetry(() => requestOnce<T>(token, path, init), {
+    attempts: 2,
+    shouldRetry: (error) => error instanceof GmailApiError && error.retryable,
+  });
 }
 
 interface MessageListResponse {

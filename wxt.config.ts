@@ -12,6 +12,5 @@ export default defineConfig({
       'https://gmail.googleapis.com/*',
       'https://oauth2.googleapis.com/*',
     ],
-    optional_host_permissions: ['https://*/*'],
   },
 });

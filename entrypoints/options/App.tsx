@@ -334,6 +334,45 @@ export default function App() {
 
       {toast && <div className={`toast ${toast.kind}`}>{toast.text}</div>}
 
+      {!draft.consent.dataSharingAccepted && (
+        <section className="card section onboarding">
+          <div>
+            <h2>Welcome to Jev</h2>
+            <p className="muted small">
+              Two tools in one extension: a Gmail organizer and a LinkedIn feed filter.
+              Everything runs locally except the classification calls described below.
+            </p>
+          </div>
+          <ul className="checklist">
+            <li>
+              <strong>Gmail</strong> — reads sender, subject, and snippet; applies Jev/* labels;
+              archives or trashes only when you click.
+            </li>
+            <li>
+              <strong>LinkedIn</strong> — reads visible post text and blurs low-value posts
+              locally.
+            </li>
+            <li>
+              <strong>AI</strong> — email metadata and post text go to the Jev API, and to Sarvam
+              when the fallback is used. Full email bodies never leave the browser.
+            </li>
+          </ul>
+          <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={draft.consent.dataSharingAccepted}
+              onChange={(event) => setConsent({ dataSharingAccepted: event.target.checked })}
+            />
+            <span className="small">I understand and accept this data sharing.</span>
+          </label>
+          <div className="row">
+            <button className="btn primary" onClick={() => void save()} disabled={!dirty}>
+              Save &amp; continue
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="card section">
         <div>
           <h2>Jev API</h2>
@@ -368,6 +407,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Mock mode"
               checked={draft.jev.mock}
               onChange={(event) => setJev({ mock: event.target.checked })}
             />
@@ -422,6 +462,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Enable Gmail organizer"
               checked={draft.gmail.enabled}
               onChange={(event) => setGmail({ enabled: event.target.checked })}
             />
@@ -605,6 +646,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Auto-label mail"
               checked={draft.gmail.autoLabel}
               onChange={(event) => setGmail({ autoLabel: event.target.checked })}
             />
@@ -662,6 +704,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Archive after unsubscribe"
               checked={draft.gmail.unsubscribeArchive}
               onChange={(event) => setGmail({ unsubscribeArchive: event.target.checked })}
             />
@@ -797,6 +840,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Enable LinkedIn de-slop"
               checked={draft.linkedin.enabled}
               onChange={(event) => setLinkedin({ enabled: event.target.checked })}
             />
@@ -826,6 +870,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Pause on LinkedIn"
               checked={draft.linkedin.paused}
               onChange={(event) => setLinkedin({ paused: event.target.checked })}
             />
@@ -842,6 +887,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Debug overlay"
               checked={draft.linkedin.debug}
               onChange={(event) => setLinkedin({ debug: event.target.checked })}
             />

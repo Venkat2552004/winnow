@@ -235,13 +235,13 @@ Authorization: Bearer <jev_key>
 
 | Phase | Work | Est. |
 |---|---|---|
-| **0 — Scaffold** | WXT + React + TS init, manifest, typed messaging + storage, popup + options shells, lint/format. Loads unpacked. | 0.5 d |
-| **1 — AI layer** | Jev client + mock mode, Sarvam fallback, IndexedDB cache, concurrency queue, confidence routing, "Test connection" in options. | 1 d |
-| **2 — LinkedIn** | Post detection, extraction, heuristics, scoring queue, blur overlay + reveal, threshold, pause, stats. Works fully on mock Jev. | 1.5 d |
-| **3 — Gmail auth + read** | OAuth via `launchWebAuthFlow`, token cache + silent re-auth, Gmail REST wrapper, metadata fetch. Options shows connected account. | 1 d |
-| **4 — Gmail classify + label** | Pre-filter, Jev classification, label creation, `batchModify`, idempotency, priority panel. | 1.5 d |
-| **5 — Unsubscribe + cleanup** | `List-Unsubscribe` parsing, one-click POST + optional permission, mailto fallback, bulk-sender aggregation, archive-all with confirmation. | 1 d |
-| **6 — Polish** | Error/rate-limit states, cache eviction, consent notice, README + manual test checklist. | 1 d |
+| **0 — Scaffold** ✅ | WXT + React + TS init, manifest, typed messaging + storage, popup + options shells, lint/format. Loads unpacked. | 0.5 d |
+| **1 — AI layer** ✅ | Jev client + mock mode, Sarvam fallback, IndexedDB cache, concurrency queue, confidence routing, "Test connection" in options. | 1 d |
+| **2 — LinkedIn** ✅ | Post detection, extraction, heuristics, scoring queue, blur overlay + reveal, threshold, pause, stats. Works fully on mock Jev. | 1.5 d |
+| **3 — Gmail auth + read** ✅ | OAuth via `launchWebAuthFlow`, token cache + silent re-auth, Gmail REST wrapper, metadata fetch. Options shows connected account. | 1 d |
+| **4 — Gmail classify + label** ✅ | Pre-filter, Jev classification, label creation, `batchModify`, idempotency, priority panel. | 1.5 d |
+| **5 — Unsubscribe + cleanup** ✅ | `List-Unsubscribe` parsing, one-click POST + optional permission, mailto fallback, bulk-sender aggregation, archive-all with confirmation. | 1 d |
+| **6 — Polish** ✅ | Error/rate-limit states, cache eviction, consent notice, README + manual test checklist. | 1 d |
 
 **Total: ~7 working days.** Phases 2 and 3 are independent and can be built in parallel.
 

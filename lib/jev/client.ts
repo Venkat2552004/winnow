@@ -1,4 +1,6 @@
-import { clamp } from '../types';
+import { describeHttpError, HttpError } from '../http';
+import { withRetry } from '../queue';
+import { clamp, errorMessage } from '../types';
 import { heuristicEmailClassification } from '../gmail/heuristics';
 import { heuristicPostScore } from '../linkedin/heuristics';
 import {
@@ -25,21 +27,41 @@ export interface JevClient {
 const TIMEOUT_MS = 2500;
 
 async function postJson<T>(url: string, apiKey: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (error) {
+    throw new HttpError(
+      'Jev API',
+      0,
+      `Jev API is unreachable (${errorMessage(error)})`,
+    );
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    throw new Error(`Jev API ${response.status}${detail ? `: ${detail.slice(0, 200)}` : ''}`);
+    throw new HttpError(
+      'Jev API',
+      response.status,
+      describeHttpError('Jev API', response.status, detail),
+    );
   }
   return (await response.json()) as T;
+}
+
+function request<T>(url: string, apiKey: string, body: unknown): Promise<T> {
+  return withRetry(() => postJson<T>(url, apiKey, body), {
+    attempts: 2,
+    shouldRetry: (error) => error instanceof HttpError && error.retryable,
+  });
 }
 
 function normalizeEmail(raw: unknown): EmailClassification {
@@ -74,13 +96,13 @@ function createLiveClient(config: JevConfig): JevClient {
   return {
     mode: 'live',
     async classifyEmail(input) {
-      const raw = await postJson<unknown>(`${base}/v1/classify/email`, config.apiKey, {
+      const raw = await request<unknown>(`${base}/v1/classify/email`, config.apiKey, {
         message: input,
       });
       return normalizeEmail(raw);
     },
     async scorePost(input) {
-      const raw = await postJson<unknown>(`${base}/v1/score/post`, config.apiKey, {
+      const raw = await request<unknown>(`${base}/v1/score/post`, config.apiKey, {
         post: input,
       });
       return normalizePost(raw);

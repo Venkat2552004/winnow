@@ -6,7 +6,7 @@ import {
   type LinkedInDiagnostics,
   type TestBlurResult,
 } from '../../lib/linkedin/diagnostics';
-import type { PriorityEntry } from '../../lib/gmail/types';
+import type { GmailStatus, PriorityEntry } from '../../lib/gmail/types';
 import type { DomProbe } from '../../lib/linkedin/probe';
 import { sendMessage } from '../../lib/messaging';
 import { getTodayStats, type DayStats } from '../../lib/stats';
@@ -25,6 +25,7 @@ export default function App() {
   const [version, setVersion] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
   const [priority, setPriority] = useState<PriorityEntry[] | null>(null);
+  const [gmailStatus, setGmailStatus] = useState<GmailStatus | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -43,6 +44,9 @@ export default function App() {
       }
     })();
     void loadPriority();
+    void sendMessage({ type: 'gmail:status' })
+      .then(setGmailStatus)
+      .catch(() => undefined);
     return onSettingsChanged(setSettings);
   }, []);
 
@@ -70,6 +74,10 @@ export default function App() {
     } catch (error) {
       setToast({ kind: 'err', text: errorMessage(error) });
     }
+  }
+
+  function openGmail(): void {
+    void chrome.tabs.create({ url: 'https://mail.google.com/mail/u/0/#inbox' });
   }
 
   async function diagnose(): Promise<void> {
@@ -174,6 +182,24 @@ export default function App() {
             {sarvamReady ? 'Sarvam ready' : 'Not configured'}
           </span>
         </div>
+        <div className="row">
+          <span className="small muted">Gmail</span>
+          <span
+            className={`badge ${gmailStatus?.connected ? 'good' : ''}`}
+            style={{
+              maxWidth: 190,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {gmailStatus?.connected
+              ? gmailStatus.email ?? 'Connected'
+              : gmailStatus?.clientIdConfigured
+                ? 'Not connected'
+                : 'Not set up'}
+          </span>
+        </div>
       </div>
 
       <div className="card stack">
@@ -185,6 +211,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Enable Gmail organizer"
               checked={settings.gmail.enabled}
               onChange={(event) => void patch({ gmail: { enabled: event.target.checked } })}
             />
@@ -238,17 +265,34 @@ export default function App() {
             No priority mail yet — run the organizer from Settings.
           </p>
         )}
+
+        <div className="row" style={{ gap: 8 }}>
+          <button className="btn" style={{ flex: 1 }} onClick={openGmail}>
+            Open Gmail
+          </button>
+          <button
+            className="btn"
+            style={{ flex: 1 }}
+            onClick={() => void chrome.runtime.openOptionsPage()}
+          >
+            Organize…
+          </button>
+        </div>
       </div>
 
       <div className="card stack">
         <div className="row">
           <div>
-            <h2>LinkedIn de-slop</h2>
+            <h2>
+              LinkedIn de-slop{' '}
+              {settings.linkedin.paused && <span className="badge warn">Paused</span>}
+            </h2>
             <p className="small muted">Blur low-value posts</p>
           </div>
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Enable LinkedIn de-slop"
               checked={settings.linkedin.enabled}
               onChange={(event) => void patch({ linkedin: { enabled: event.target.checked } })}
             />
@@ -284,6 +328,7 @@ export default function App() {
           <label className="switch">
             <input
               type="checkbox"
+              aria-label="Pause on LinkedIn"
               checked={settings.linkedin.paused}
               onChange={(event) => void patch({ linkedin: { paused: event.target.checked } })}
             />
@@ -297,63 +342,69 @@ export default function App() {
           </p>
         )}
 
-        <div className="row" style={{ gap: 8 }}>
-          <button className="btn" style={{ flex: 1 }} onClick={() => void diagnose()}>
-            Diagnose
-          </button>
-          <button className="btn" style={{ flex: 1 }} onClick={() => void testBlur()}>
-            Test blur
-          </button>
-        </div>
+        <details className="stack" style={{ gap: 8 }}>
+          <summary className="small muted" style={{ cursor: 'pointer' }}>
+            Developer tools
+          </summary>
 
-        <button className="btn" onClick={() => void runProbe()}>
-          DOM probe
-        </button>
-
-        {probe && (
-          <div className="stack" style={{ gap: 6 }}>
-            <textarea
-              readOnly
-              value={JSON.stringify(probe, null, 2)}
-              rows={10}
-              style={{
-                width: '100%',
-                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                fontSize: 10,
-                lineHeight: 1.4,
-                background: 'var(--bg)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                padding: 8,
-                resize: 'vertical',
-              }}
-              onFocus={(event) => event.currentTarget.select()}
-            />
-            <button className="btn" onClick={() => void copyProbe()}>
-              Copy probe
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn" style={{ flex: 1 }} onClick={() => void diagnose()}>
+              Diagnose
+            </button>
+            <button className="btn" style={{ flex: 1 }} onClick={() => void testBlur()}>
+              Test blur
             </button>
           </div>
-        )}
 
-        {diagError && <div className="toast err">{diagError}</div>}
+          <button className="btn" onClick={() => void runProbe()}>
+            DOM probe
+          </button>
 
-        {diag && (
-          <div className="toast ok" style={{ display: 'grid', gap: 2 }}>
-            <span>
-              Active: {String(diag.active)} · posts found: {diag.roots}
-            </span>
-            <span>
-              Scored: {diag.scored} · blurred: {diag.blurred} · revealed: {diag.revealed}
-            </span>
-            {diag.sample && (
+          {probe && (
+            <div className="stack" style={{ gap: 6 }}>
+              <textarea
+                readOnly
+                value={JSON.stringify(probe, null, 2)}
+                rows={10}
+                style={{
+                  width: '100%',
+                  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                  fontSize: 10,
+                  lineHeight: 1.4,
+                  background: 'var(--bg)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: 8,
+                  resize: 'vertical',
+                }}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <button className="btn" onClick={() => void copyProbe()}>
+                Copy probe
+              </button>
+            </div>
+          )}
+
+          {diagError && <div className="toast err">{diagError}</div>}
+
+          {diag && (
+            <div className="toast ok" style={{ display: 'grid', gap: 2 }}>
               <span>
-                Sample: {diag.sample.textLength} chars by {diag.sample.author}
+                Active: {String(diag.active)} · posts found: {diag.roots}
               </span>
-            )}
-            {diag.lastError && <span>Error: {diag.lastError}</span>}
-          </div>
-        )}
+              <span>
+                Scored: {diag.scored} · blurred: {diag.blurred} · revealed: {diag.revealed}
+              </span>
+              {diag.sample && (
+                <span>
+                  Sample: {diag.sample.textLength} chars by {diag.sample.author}
+                </span>
+              )}
+              {diag.lastError && <span>Error: {diag.lastError}</span>}
+            </div>
+          )}
+        </details>
       </div>
 
       {!settings.consent.dataSharingAccepted && (

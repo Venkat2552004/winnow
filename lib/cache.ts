@@ -56,3 +56,48 @@ export async function cacheSet<T>(key: string, value: T, ttlMs: number): Promise
 export async function cacheClear(): Promise<void> {
   await withStore('readwrite', (store) => store.clear());
 }
+
+const MAX_ENTRIES = 5000;
+
+/**
+ * Deletes expired records and trims the cache to `maxEntries`, dropping the
+ * soonest-to-expire entries first. Returns how many records were removed.
+ */
+export async function cachePrune(maxEntries = MAX_ENTRIES): Promise<number> {
+  const db = await openDb();
+
+  return new Promise<number>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const request = store.getAll();
+    let removed = 0;
+
+    request.onsuccess = () => {
+      const records = (request.result ?? []) as CacheRecord[];
+      const now = Date.now();
+
+      const live: CacheRecord[] = [];
+      for (const record of records) {
+        if (record.expiresAt < now) {
+          store.delete(record.key);
+          removed += 1;
+        } else {
+          live.push(record);
+        }
+      }
+
+      live.sort((a, b) => a.expiresAt - b.expiresAt);
+      const overflow = live.length - maxEntries;
+      for (let index = 0; index < overflow; index += 1) {
+        const record = live[index];
+        if (!record) continue;
+        store.delete(record.key);
+        removed += 1;
+      }
+    };
+
+    tx.oncomplete = () => resolve(removed);
+    tx.onerror = () => reject(tx.error ?? new Error('Cache prune failed'));
+    tx.onabort = () => reject(tx.error ?? new Error('Cache prune aborted'));
+  });
+}

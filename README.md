@@ -7,7 +7,7 @@ A Chrome extension that does two things:
 
 Both use the **Jev API** as the primary classifier, with **Sarvam** as a fallback for low-confidence results. Until the Jev API is live, the extension runs in **mock mode** using deterministic local heuristics — every feature works end to end.
 
-Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md).
+Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Manual test checklist: [`docs/TESTING.md`](docs/TESTING.md).
 
 ## Status
 
@@ -19,7 +19,7 @@ Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 | 3 — Gmail auth + read | ✅ done (OAuth, token refresh, metadata fetch) |
 | 4 — Gmail classify + label | ✅ done (preview, Jev/* labels, batchModify, priority inbox) |
 | 5 — Unsubscribe + cleanup | ✅ done (List-Unsubscribe, one-click POST, bulk archive/trash) |
-| 6 — Polish | ⏳ next |
+| 6 — Polish | ✅ done (retries, cache eviction, onboarding, icons, docs) |
 
 ## Setup
 
@@ -37,17 +37,61 @@ To load it manually:
 3. Enable **Developer mode**
 4. **Load unpacked** → select `.output/chrome-mv3`
 
+> Unpacked extension IDs are derived from the folder path. If you move `.output/chrome-mv3`, the ID changes and the Gmail redirect URI must be updated.
+
 ## Configure
 
-Open the extension's **Settings** page:
+Open the extension's **Settings** page.
+
+### AI
 
 - **Jev API** — base URL and key. Leave **Mock mode** on to use local heuristics.
 - **Sarvam fallback** — base URL, model, and key. Used only when Jev is unavailable or unsure.
-- **Gmail** — OAuth client ID from your Google Cloud project (scope `gmail.modify`).
-- **LinkedIn** — blur threshold (default 35).
-- **Privacy** — accept the data-sharing notice.
+- **Privacy** — accept the data-sharing notice before using the extension.
+
+### Gmail
+
+1. Create a Google Cloud project and enable the **Gmail API**.
+2. Configure the OAuth consent screen (External, Testing) and add your Gmail address as a test user.
+3. Create an OAuth client of type **Web application**.
+4. Add this authorized redirect URI (the exact value is also shown in Jev's settings):
+   ```
+   https://YOUR_EXTENSION_ID.chromiumapp.org/
+   ```
+5. Paste the **client ID** into Jev → Gmail → OAuth client ID.
+6. Click **Connect Gmail** and approve the `gmail.modify` scope.
+
+The client secret is not needed — Jev uses the implicit flow.
+
+### LinkedIn
+
+- **Blur threshold** — default 35. Higher blurs more.
+- **Pause** — stops scoring without disabling the extension.
+- **Debug overlay** — shows a live diagnostic pill on LinkedIn.
 
 Keys are stored in `chrome.storage.local` and never committed. `.env` is optional and only provides build-time defaults.
+
+## Using Jev
+
+### Gmail organizer
+
+1. Settings → Gmail → **Preview classification** — classifies recent mail without writing anything.
+2. Review the category and priority score for each message.
+3. **Apply labels** — creates `Jev/*` labels and applies them with `batchModify`. Re-running only changes what differs.
+
+The popup shows the top priority mail (score ≥ your threshold) with a direct link into Gmail.
+
+### Unsubscribe & cleanup
+
+- **Scan senders** — groups recent mail by sender, keeping only senders with a `List-Unsubscribe` header.
+- **Unsubscribe selected** — sends RFC 8058 one-click POSTs directly, or opens the unsubscribe link / mailto in a background tab.
+- **Archive after unsubscribe** — optionally removes that sender's scanned messages from the inbox.
+- **Preview cleanup** — finds promotions, newsletters, and notifications older than the cleanup age. Starred and important mail is never included.
+- **Archive / Trash** — removes `INBOX` or moves to Trash. Trash asks for confirmation.
+
+### LinkedIn
+
+Scroll the feed. Posts scoring below the threshold are blurred with a `Low value · score · click to reveal` overlay. Click to reveal; the score badge stays visible on hover. The popup shows today's scored / blurred / revealed counts.
 
 ## Scripts
 
@@ -62,19 +106,21 @@ Keys are stored in `chrome.storage.local` and never committed. `.env` is optiona
 
 ```
 entrypoints/
-  background.ts        message router, AI orchestration
-  popup/               quick toggles + threshold
-  options/             keys, OAuth client ID, privacy
-  gmail.content/       Gmail content script
+  background.ts        message router, AI orchestration, Gmail jobs
+  popup/               quick toggles, priority inbox, diagnostics
+  options/             keys, OAuth client ID, onboarding, cleanup
+  gmail.content/       Gmail content script shell
   linkedin.content/    LinkedIn content script
 lib/
   jev/                 typed API client (live + mock) and contracts
   llm/                 Sarvam fallback client
-  gmail/               email heuristics
-  linkedin/            post heuristics
+  gmail/               API, auth, labels, organizer, unsubscribe, cleanup
+  linkedin/            detection, extraction, heuristics, overlay
   pipeline.ts          heuristic → Jev → Sarvam routing
-  cache.ts             IndexedDB cache
+  cache.ts             IndexedDB cache with eviction
   queue.ts             concurrency + retry
+  http.ts              HTTP error classification
+  ui/                  shared UI (error boundary)
   storage.ts           typed settings
   messaging.ts         typed runtime messages
 ```
@@ -83,9 +129,9 @@ lib/
 
 Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the Jev API, and to Sarvam when the fallback is used. Full email bodies are never sent. No analytics, no telemetry.
 
-## Troubleshooting LinkedIn
+## Troubleshooting
 
-If posts aren't blurring:
+### LinkedIn posts aren't blurring
 
 1. **Rebuild and reload.** Content scripts don't hot-swap into tabs that are already open.
    ```bash
@@ -93,10 +139,28 @@ If posts aren't blurring:
    ```
    Then `chrome://extensions` → reload Jev → reload the LinkedIn tab.
 2. **Turn on the debug overlay.** Settings → LinkedIn → *Debug overlay*. A pill appears bottom-right showing `posts · scored · blurred · revealed`.
-3. **Open the popup → Diagnose.** It reports how many post roots were found and the last error.
-4. **Open the popup → Test blur.** This blurs the first post with a fake score.
+3. **Popup → Developer tools → Diagnose.** Reports how many post roots were found and the last error.
+4. **Popup → Developer tools → Test blur.** Blurs the first post with a fake score.
    - Test blur works, real scoring doesn't → extraction or API issue.
    - Test blur fails → the page selectors need updating (`lib/linkedin/dom.ts`).
 5. **Check the console** for `[jev]` logs (enable debug first).
 
 Leave **Mock mode** on until the Jev API is live. Sarvam is still used for posts the local heuristics can't confidently judge.
+
+### Gmail errors
+
+| Error | Fix |
+|---|---|
+| `redirect_uri_mismatch` | Copy the redirect URI from Jev's settings into Google Cloud exactly — the extension ID must match. |
+| `invalid_client` | Client ID typo, or the client isn't type **Web application**. |
+| `access_denied` | Your Gmail isn't in **Test users** on the consent screen. |
+| `Gmail API has not been used` | Enable **Gmail API** in APIs & Services → Library. |
+| `Gmail session expired` | Click **Connect Gmail** again — silent refresh failed. |
+| `Gmail API rate limit reached` | Wait a moment and retry; Jev already retries once automatically. |
+| `Could not reach the Gmail API` | Reload the extension so the new host permissions apply. |
+
+### AI errors
+
+- **Jev API unreachable / rate limited** — Jev retries once, then falls back to local heuristics (and Sarvam if configured). Check the base URL and key.
+- **Sarvam rejected the credentials** — verify the key and model in Settings.
+- **Everything scores 55** — mock mode is on and no heuristic matched. That's expected until the Jev API is live.

@@ -1,4 +1,6 @@
-import { clamp } from '../types';
+import { describeHttpError, HttpError } from '../http';
+import { withRetry } from '../queue';
+import { clamp, errorMessage } from '../types';
 import {
   CATEGORY_PRIORITY_FLOOR,
   isEmailCategory,
@@ -34,28 +36,49 @@ async function chatJson(
   system: string,
   user: string,
 ): Promise<unknown> {
-  const response = await fetch(`${config.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: config.model,
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+  const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  const body = JSON.stringify({
+    model: config.model,
+    temperature: 0,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
   });
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    throw new Error(`Sarvam ${response.status}${detail ? `: ${detail.slice(0, 200)}` : ''}`);
-  }
+  const response = await withRetry(
+    async () => {
+      let result: Response;
+      try {
+        result = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${config.apiKey}`,
+          },
+          body,
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+      } catch (error) {
+        throw new HttpError('Sarvam', 0, `Sarvam is unreachable (${errorMessage(error)})`);
+      }
+
+      if (!result.ok) {
+        const detail = await result.text().catch(() => '');
+        throw new HttpError(
+          'Sarvam',
+          result.status,
+          describeHttpError('Sarvam', result.status, detail),
+        );
+      }
+      return result;
+    },
+    {
+      attempts: 2,
+      shouldRetry: (error) => error instanceof HttpError && error.retryable,
+    },
+  );
 
   const json = (await response.json()) as ChatCompletionResponse;
   const content = json.choices?.[0]?.message?.content;
