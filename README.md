@@ -18,8 +18,8 @@ Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 | 2 — LinkedIn blur | ✅ done (detection, scoring, blur overlay, stats) |
 | 3 — Gmail auth + read | ✅ done (OAuth, token refresh, metadata fetch) |
 | 4 — Gmail classify + label | ✅ done (preview, Jev/* labels, batchModify, priority inbox) |
-| 5 — Unsubscribe + cleanup | ⏳ next |
-| 6 — Polish | ⏳ |
+| 5 — Unsubscribe + cleanup | ✅ done (List-Unsubscribe, one-click POST, bulk archive/trash) |
+| 6 — Polish | ⏳ next |
 
 ## Setup
 

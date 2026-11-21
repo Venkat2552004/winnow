@@ -9,6 +9,10 @@ export interface GmailMessageMeta {
   snippet: string;
   labelIds: string[];
   hasListUnsubscribe: boolean;
+  /** Raw List-Unsubscribe header value, when present. */
+  listUnsubscribe: string | null;
+  /** Raw List-Unsubscribe-Post header value, when present. */
+  listUnsubscribePost: string | null;
 }
 
 export interface GmailLabel {
@@ -44,3 +48,34 @@ export interface PriorityEntry {
   reason: string;
   at: number;
 }
+
+export interface UnsubscribeSender {
+  /** Lowercased sender address. */
+  email: string;
+  name: string;
+  count: number;
+  sampleSubject: string;
+  https: string | null;
+  mailto: string | null;
+  oneClick: boolean;
+  messageIds: string[];
+}
+
+export type UnsubscribeResult = 'posted' | 'opened' | 'mailto' | 'none';
+
+export interface CleanupCandidate {
+  id: string;
+  subject: string;
+  from: string;
+  date: string;
+  category: EmailCategory;
+  priority: number;
+}
+
+export interface CleanupPreview {
+  candidates: CleanupCandidate[];
+  total: number;
+  olderThanDays: number;
+}
+
+export type CleanupMode = 'archive' | 'trash';

@@ -106,6 +106,8 @@ export async function getMessageMeta(token: string, id: string): Promise<GmailMe
     snippet: raw.snippet ?? '',
     labelIds: raw.labelIds ?? [],
     hasListUnsubscribe: headers.has('list-unsubscribe'),
+    listUnsubscribe: headers.get('list-unsubscribe') ?? null,
+    listUnsubscribePost: headers.get('list-unsubscribe-post') ?? null,
   };
 }
 

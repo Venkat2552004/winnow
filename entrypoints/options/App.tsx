@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { GmailMessageMeta, GmailStatus, OrganizeRow } from '../../lib/gmail/types';
+import type {
+  CleanupMode,
+  CleanupPreview,
+  GmailMessageMeta,
+  GmailStatus,
+  OrganizeRow,
+  UnsubscribeSender,
+} from '../../lib/gmail/types';
 import { sendMessage } from '../../lib/messaging';
 import { getSettings, updateSettings, type Settings } from '../../lib/storage';
 import { errorMessage } from '../../lib/types';
@@ -17,6 +24,11 @@ export default function App() {
   const [gmailError, setGmailError] = useState<string | null>(null);
   const [previewRows, setPreviewRows] = useState<OrganizeRow[] | null>(null);
   const [organizing, setOrganizing] = useState(false);
+  const [senders, setSenders] = useState<UnsubscribeSender[] | null>(null);
+  const [selectedSenders, setSelectedSenders] = useState<Set<string>>(new Set());
+  const [unsubBusy, setUnsubBusy] = useState(false);
+  const [cleanup, setCleanup] = useState<CleanupPreview | null>(null);
+  const [cleanupBusy, setCleanupBusy] = useState(false);
 
   useEffect(() => {
     void getSettings().then((settings) => {
@@ -173,6 +185,129 @@ export default function App() {
       setToast({ kind: 'ok', text: 'Label memory cleared' });
     } catch (error) {
       setToast({ kind: 'err', text: errorMessage(error) });
+    }
+  }
+
+  async function scanSenders(): Promise<void> {
+    setUnsubBusy(true);
+    setGmailError(null);
+    try {
+      const result = await sendMessage({ type: 'gmail:unsubscribe:scan' });
+      setSenders(result.senders);
+      setSelectedSenders(new Set(result.senders.map((sender) => sender.email)));
+      setToast({
+        kind: 'ok',
+        text:
+          result.senders.length > 0
+            ? `Found ${result.senders.length} senders with unsubscribe links`
+            : 'No unsubscribe links found in the lookback window',
+      });
+    } catch (error) {
+      setGmailError(errorMessage(error));
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setUnsubBusy(false);
+    }
+  }
+
+  function toggleSender(email: string): void {
+    setSelectedSenders((previous) => {
+      const next = new Set(previous);
+      if (next.has(email)) next.delete(email);
+      else next.add(email);
+      return next;
+    });
+  }
+
+  async function unsubscribeSelected(): Promise<void> {
+    if (!senders || !draft) return;
+    const chosen = senders.filter((sender) => selectedSenders.has(sender.email));
+    if (chosen.length === 0) {
+      setToast({ kind: 'err', text: 'Select at least one sender' });
+      return;
+    }
+
+    setUnsubBusy(true);
+    setGmailError(null);
+    try {
+      let posted = 0;
+      let opened = 0;
+      let archived = 0;
+      for (const sender of chosen) {
+        const result = await sendMessage({
+          type: 'gmail:unsubscribe:run',
+          sender,
+          archive: draft.gmail.unsubscribeArchive,
+        });
+        if (result.result === 'posted') posted += 1;
+        else if (result.result === 'opened' || result.result === 'mailto') opened += 1;
+        archived += result.archived;
+      }
+
+      setToast({
+        kind: 'ok',
+        text: `Unsubscribed ${chosen.length} · ${posted} one-click · ${opened} opened · ${archived} archived`,
+      });
+      setSenders((previous) =>
+        previous ? previous.filter((sender) => !selectedSenders.has(sender.email)) : previous,
+      );
+      setSelectedSenders(new Set());
+    } catch (error) {
+      setGmailError(errorMessage(error));
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setUnsubBusy(false);
+    }
+  }
+
+  async function previewCleanupMail(): Promise<void> {
+    setCleanupBusy(true);
+    setGmailError(null);
+    try {
+      const result = await sendMessage({ type: 'gmail:cleanup:preview' });
+      setCleanup(result);
+      setToast({
+        kind: 'ok',
+        text:
+          result.total > 0
+            ? `${result.total} messages older than ${result.olderThanDays} days`
+            : 'Nothing to clean up',
+      });
+    } catch (error) {
+      setGmailError(errorMessage(error));
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setCleanupBusy(false);
+    }
+  }
+
+  async function runCleanup(mode: CleanupMode): Promise<void> {
+    if (!cleanup || cleanup.candidates.length === 0) return;
+    if (
+      mode === 'trash' &&
+      !window.confirm(`Move ${cleanup.candidates.length} messages to Trash?`)
+    ) {
+      return;
+    }
+
+    setCleanupBusy(true);
+    setGmailError(null);
+    try {
+      const result = await sendMessage({
+        type: 'gmail:cleanup:apply',
+        ids: cleanup.candidates.map((candidate) => candidate.id),
+        mode,
+      });
+      setCleanup(null);
+      setToast({
+        kind: 'ok',
+        text: `${mode === 'trash' ? 'Trashed' : 'Archived'} ${result.affected} messages`,
+      });
+    } catch (error) {
+      setGmailError(errorMessage(error));
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setCleanupBusy(false);
     }
   }
 
@@ -491,6 +626,166 @@ export default function App() {
             onChange={(event) => setGmail({ priorityThreshold: Number(event.target.value) })}
           />
         </div>
+      </section>
+
+      <section className="card section">
+        <div>
+          <h2>Unsubscribe &amp; cleanup</h2>
+          <p className="muted small">
+            Uses each sender&apos;s List-Unsubscribe header. One-click requests are sent directly;
+            other links open in a background tab for you to confirm.
+          </p>
+        </div>
+
+        <div className="row" style={{ gap: 8 }}>
+          <button
+            className="btn"
+            onClick={() => void scanSenders()}
+            disabled={unsubBusy || !gmailStatus?.connected}
+          >
+            {unsubBusy ? 'Working…' : 'Scan senders'}
+          </button>
+          <button
+            className="btn primary"
+            onClick={() => void unsubscribeSelected()}
+            disabled={unsubBusy || selectedSenders.size === 0}
+          >
+            Unsubscribe selected ({selectedSenders.size})
+          </button>
+        </div>
+
+        <div className="row">
+          <div>
+            <h2>Archive after unsubscribe</h2>
+            <p className="muted small">Remove the sender&apos;s scanned messages from the inbox.</p>
+          </div>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={draft.gmail.unsubscribeArchive}
+              onChange={(event) => setGmail({ unsubscribeArchive: event.target.checked })}
+            />
+            <span />
+          </label>
+        </div>
+
+        {senders && senders.length > 0 && (
+          <div className="stack" style={{ gap: 6 }}>
+            {senders.map((sender) => (
+              <label
+                key={sender.email}
+                className="row"
+                style={{ gap: 8, alignItems: 'baseline', cursor: 'pointer' }}
+                title={sender.sampleSubject}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedSenders.has(sender.email)}
+                  onChange={() => toggleSender(sender.email)}
+                />
+                <span
+                  className="small"
+                  style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {sender.name}
+                </span>
+                <span className="badge">
+                  {sender.oneClick ? 'one-click' : sender.https ? 'link' : 'mailto'}
+                </span>
+                <span className="small muted" style={{ width: 28, textAlign: 'right' }}>
+                  {sender.count}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {senders && senders.length === 0 && (
+          <p className="small muted">No senders with unsubscribe links in the lookback window.</p>
+        )}
+
+        <div className="divider" />
+
+        <div>
+          <h2>Bulk cleanup</h2>
+          <p className="muted small">
+            Promotions, newsletters, and notifications older than the cleanup age. Starred and
+            important mail is never touched.
+          </p>
+        </div>
+
+        <div className="field">
+          <label htmlFor="gmail-cleanup-days">Cleanup age (days)</label>
+          <input
+            id="gmail-cleanup-days"
+            type="number"
+            min={1}
+            max={365}
+            value={draft.gmail.cleanupOlderThanDays}
+            onChange={(event) => setGmail({ cleanupOlderThanDays: Number(event.target.value) })}
+          />
+        </div>
+
+        <div className="row" style={{ gap: 8 }}>
+          <button
+            className="btn"
+            onClick={() => void previewCleanupMail()}
+            disabled={cleanupBusy || !gmailStatus?.connected}
+          >
+            {cleanupBusy ? 'Working…' : 'Preview cleanup'}
+          </button>
+          <button
+            className="btn"
+            onClick={() => void runCleanup('archive')}
+            disabled={cleanupBusy || !cleanup || cleanup.candidates.length === 0}
+          >
+            Archive
+          </button>
+          <button
+            className="btn danger"
+            onClick={() => void runCleanup('trash')}
+            disabled={cleanupBusy || !cleanup || cleanup.candidates.length === 0}
+          >
+            Trash
+          </button>
+        </div>
+
+        {cleanup && (
+          <div className="stack" style={{ gap: 6 }}>
+            <p className="small muted">
+              {cleanup.total} candidates older than {cleanup.olderThanDays} days
+            </p>
+            {cleanup.candidates.slice(0, 30).map((candidate) => (
+              <div
+                key={candidate.id}
+                className="row"
+                style={{ gap: 8, alignItems: 'baseline' }}
+                title={candidate.from}
+              >
+                <span
+                  className="small"
+                  style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {candidate.subject}
+                </span>
+                <span className="badge">{candidate.category}</span>
+              </div>
+            ))}
+            {cleanup.total > 30 && (
+              <p className="small muted">Showing 30 of {cleanup.total}</p>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="card section">

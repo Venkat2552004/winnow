@@ -1,6 +1,6 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { cacheClear } from '../lib/cache';
-import { getMessageMeta, GmailApiError, listMessageIds } from '../lib/gmail/api';
+import { getMessageMeta, GmailApiError, listMessageIds, batchModify } from '../lib/gmail/api';
 import {
   clearToken,
   connectGmail,
@@ -8,6 +8,7 @@ import {
   getAccessToken,
   getConnectedEmail,
 } from '../lib/gmail/auth';
+import { applyCleanup, previewCleanup } from '../lib/gmail/cleanup';
 import type { GmailMessageMeta } from '../lib/gmail/types';
 import {
   applyLabels,
@@ -15,6 +16,8 @@ import {
   getPriorityItems,
   previewRecent,
 } from '../lib/gmail/organizer';
+import { scanUnsubscribes } from '../lib/gmail/senders';
+import { performUnsubscribe } from '../lib/gmail/unsubscribe';
 import type { Envelope, Handlers, Request } from '../lib/messaging';
 import { classifyEmail, scorePost } from '../lib/pipeline';
 import { TaskQueue } from '../lib/queue';
@@ -114,6 +117,36 @@ export default defineBackground(() => {
     'gmail:reset': async () => {
       await clearOrganizerState();
       return { ok: true };
+    },
+    'gmail:unsubscribe:scan': async () => {
+      const settings = await getSettings();
+      return withGmailToken(async (token) => ({
+        senders: await scanUnsubscribes(token, settings),
+      }));
+    },
+    'gmail:unsubscribe:run': async ({ sender, archive }) => {
+      const result = await performUnsubscribe({
+        https: sender.https,
+        mailto: sender.mailto,
+        oneClick: sender.oneClick,
+      });
+
+      let archived = 0;
+      if (archive && sender.messageIds.length > 0) {
+        archived = await withGmailToken(async (token) => {
+          await batchModify(token, sender.messageIds, [], ['INBOX']);
+          return sender.messageIds.length;
+        });
+      }
+
+      return { result, archived };
+    },
+    'gmail:cleanup:preview': async () => {
+      const settings = await getSettings();
+      return withGmailToken(async (token) => previewCleanup(token, settings));
+    },
+    'gmail:cleanup:apply': async ({ ids, mode }) => {
+      return withGmailToken(async (token) => applyCleanup(token, ids, mode));
     },
   };
 

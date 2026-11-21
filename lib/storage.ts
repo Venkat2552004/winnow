@@ -19,6 +19,10 @@ export interface Settings {
     maxMessages: number;
     autoLabel: boolean;
     priorityThreshold: number;
+    /** Only mail older than this is eligible for bulk cleanup. */
+    cleanupOlderThanDays: number;
+    /** Archive a sender's existing mail after unsubscribing. */
+    unsubscribeArchive: boolean;
   };
   linkedin: {
     enabled: boolean;
@@ -53,6 +57,8 @@ export const DEFAULT_SETTINGS: Settings = {
     maxMessages: 200,
     autoLabel: true,
     priorityThreshold: 70,
+    cleanupOlderThanDays: 14,
+    unsubscribeArchive: true,
   },
   linkedin: {
     enabled: true,

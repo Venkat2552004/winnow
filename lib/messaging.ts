@@ -1,9 +1,13 @@
 import type {
+  CleanupMode,
+  CleanupPreview,
   GmailMessageMeta,
   GmailStatus,
   OrganizeRow,
   OrganizeSummary,
   PriorityEntry,
+  UnsubscribeResult,
+  UnsubscribeSender,
 } from './gmail/types';
 import type { EmailClassification, EmailInput, PostInput, PostScore } from './jev/types';
 import type { Settings } from './storage';
@@ -23,7 +27,11 @@ export type Request =
   | { type: 'gmail:preview' }
   | { type: 'gmail:apply'; rows: OrganizeRow[] }
   | { type: 'gmail:priority' }
-  | { type: 'gmail:reset' };
+  | { type: 'gmail:reset' }
+  | { type: 'gmail:unsubscribe:scan' }
+  | { type: 'gmail:unsubscribe:run'; sender: UnsubscribeSender; archive: boolean }
+  | { type: 'gmail:cleanup:preview' }
+  | { type: 'gmail:cleanup:apply'; ids: string[]; mode: CleanupMode };
 
 export interface ResponseMap {
   ping: { version: string; mode: 'mock' | 'live' };
@@ -40,6 +48,10 @@ export interface ResponseMap {
   'gmail:apply': OrganizeSummary;
   'gmail:priority': { items: PriorityEntry[] };
   'gmail:reset': { ok: true };
+  'gmail:unsubscribe:scan': { senders: UnsubscribeSender[] };
+  'gmail:unsubscribe:run': { result: UnsubscribeResult; archived: number };
+  'gmail:cleanup:preview': CleanupPreview;
+  'gmail:cleanup:apply': { affected: number };
 }
 
 export type RequestType = Request['type'];
