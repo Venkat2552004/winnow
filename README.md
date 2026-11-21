@@ -74,6 +74,7 @@ Jev uses the **Roar AI gateway** by default through the official OpenAI SDK. The
 5. Test it from the extension: **Popup → Developer tools → Test AI**. The toast shows the provider, model, and a real score.
 
 - **Use Roar AI gateway** — when on, the extension always uses `ROAR_API_KEY` and `ROAR_BASE_URL` from `.env`, even if older settings still contain a custom URL or key. Turn it off to use the custom fields below.
+- **Browser-origin block** — Roar rejects requests that carry an `Origin: chrome-extension://…` header. Jev ships a `declarativeNetRequest` rule (`public/rules/roar-headers.json`) that removes `Origin` and `Referer` for `api.roar-ai.com`. Reload the extension after updating so the rule is installed.
 - **Mock mode** — turn on to use local heuristics without calling the gateway. This is an explicit choice; a Roar key in `.env` no longer silently leaves mock mode on.
 - **Older installs** — if a previous version stored `mock: true` by default, the first load after this update flips it to live when a Roar key is present. Toggle **Mock mode** on and off if you want to override that.
 - **Sarvam fallback** — base URL, model, and key. Used only when the primary result is low confidence.
@@ -200,6 +201,7 @@ Leave **Mock mode** on to use local heuristics. Sarvam is still used for posts t
 - **Roar AI unreachable / rate limited** — Jev retries once, then falls back to local heuristics (and Sarvam if configured). Check `ROAR_API_KEY` and the gateway URL.
 - **Sarvam rejected the credentials** — verify the key and model in Settings.
 - **Roar AI rejected the credentials** — check `ROAR_API_KEY` in `.env`, then rebuild the extension.
+- **403 "This request came from a web page (origin chrome-extension://…)"** — the `Origin`-stripping rule is missing or not active. Rebuild, then reload Jev in `chrome://extensions` so the `declarativeNetRequest` permission and rule are installed. If it persists, check `chrome://extensions` → Jev → Errors for an invalid rule.
 - **Everything scores 55** — mock mode is on and no heuristic matched. Turn off **Mock mode** to use the gateway.
 - **Everything scores 50 / "Scoring unavailable"** — the gateway call failed and no heuristic matched. Open **Popup → Developer tools → Test AI** to see the exact error, then **Clear cache** and reload the LinkedIn tab. Failures are no longer cached, so the next scroll retries.
 - **Scores look stale after changing the model** — the cache key is versioned, but an open LinkedIn tab keeps scores in memory. Click **Clear cache** or reload the tab.

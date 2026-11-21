@@ -9,7 +9,16 @@ export default defineConfig({
   manifest: {
     name: 'Jev',
     description: 'Organize Gmail and de-slop your LinkedIn feed.',
-    permissions: ['storage', 'identity'],
+    permissions: ['storage', 'identity', 'declarativeNetRequest'],
+    declarative_net_request: {
+      rule_resources: [
+        {
+          id: 'roar-headers',
+          enabled: true,
+          path: 'rules/roar-headers.json',
+        },
+      ],
+    },
     host_permissions: [
       'https://mail.google.com/*',
       'https://*.linkedin.com/*',

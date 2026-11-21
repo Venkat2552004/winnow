@@ -32,6 +32,17 @@ export default defineBackground(() => {
   // Trim stale cache entries whenever the worker starts.
   void cachePrune().catch(() => undefined);
 
+  // Roar rejects browser-origin requests, so a static rule strips Origin for
+  // api.roar-ai.com. Warn if the rule is missing after an update.
+  void chrome.declarativeNetRequest
+    ?.getEnabledRulesets()
+    .then((ids) => {
+      if (!ids.includes('roar-headers')) {
+        console.warn('[jev] Roar header rule is not enabled — requests may get a 403');
+      }
+    })
+    .catch(() => undefined);
+
   async function withGmailToken<T>(run: (token: string) => Promise<T>): Promise<T> {
     const settings = await getSettings();
     if (!settings.gmail.clientId) {
