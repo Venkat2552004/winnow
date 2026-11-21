@@ -14,7 +14,7 @@ A single MV3 extension, **Jev**, with two independent features:
 | 1 | **Gmail organizer** | `mail.google.com` | Auto-labels mail by category, surfaces a priority view, and provides bulk-sender unsubscribe + archive cleanup. |
 | 2 | **LinkedIn de-slop** | `linkedin.com/feed` | Scores feed posts for value and blurs low-value ones behind a click-to-reveal overlay. |
 
-Both features share one AI layer: **Jev API** (primary) with **Sarvam** as a fallback for low-confidence results.
+Both features share one AI layer: the **Roar AI gateway** (OpenAI-compatible, primary) with **Sarvam** as a fallback for low-confidence results.
 
 ---
 
@@ -25,13 +25,13 @@ Both features share one AI layer: **Jev API** (primary) with **Sarvam** as a fal
 | Features | Two (Gmail + LinkedIn). Architecture stays extensible for a third. |
 | Gmail access | Gmail REST API + OAuth 2.0 (`chrome.identity.launchWebAuthFlow`) |
 | Gmail features | Auto-label + priority inbox **and** unsubscribe + cleanup |
-| LinkedIn scoring | Jev API score, with local heuristics as a free pre-filter |
-| AI backend | Jev API (custom REST) primary → Sarvam fallback on low confidence / errors |
+| LinkedIn scoring | Roar AI score, with local heuristics as a free pre-filter |
+| AI backend | Roar AI gateway (OpenAI SDK) primary → Sarvam fallback on low confidence / errors |
 | Stack | WXT + React + TypeScript, MV3 |
 | Distribution | Unpacked, personal use |
 | Blur UX | Blur + click-to-reveal, threshold slider in popup |
 | Key storage | `chrome.storage.local` via options page (never in repo) |
-| Jev API status | Not live yet → build against a typed interface with a **mock mode** |
+| AI provider status | Roar AI gateway is live; **mock mode** remains available for offline use |
 
 ---
 

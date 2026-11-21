@@ -37,21 +37,22 @@ export interface Settings {
   };
 }
 
-const env = import.meta.env as Record<string, string | undefined>;
+const roarBaseUrl = import.meta.env.ROAR_BASE_URL ?? '';
 
 export const DEFAULT_SETTINGS: Settings = {
   jev: {
-    baseUrl: env.WXT_JEV_BASE_URL ?? '',
-    apiKey: env.WXT_JEV_API_KEY ?? '',
-    mock: true,
+    // The key itself stays in the background bundle; only the public URL is here.
+    baseUrl: roarBaseUrl || (import.meta.env.WXT_JEV_BASE_URL ?? ''),
+    apiKey: import.meta.env.WXT_JEV_API_KEY ?? '',
+    mock: !roarBaseUrl,
   },
   sarvam: {
     baseUrl: 'https://api.sarvam.ai/v2',
-    apiKey: env.WXT_SARVAM_API_KEY ?? '',
+    apiKey: import.meta.env.WXT_SARVAM_API_KEY ?? '',
     model: 'deepseekv4.1-flash-1017',
   },
   gmail: {
-    clientId: env.WXT_GMAIL_CLIENT_ID ?? '',
+    clientId: import.meta.env.WXT_GMAIL_CLIENT_ID ?? '',
     enabled: true,
     lookbackDays: 7,
     maxMessages: 200,
@@ -95,9 +96,4 @@ export function onSettingsChanged(callback: (settings: Settings) => void): () =>
   };
   chrome.storage.onChanged.addListener(listener);
   return () => chrome.storage.onChanged.removeListener(listener);
-}
-
-/** True when the Jev API is configured and mock mode is off. */
-export function isJevLive(settings: Settings): boolean {
-  return !settings.jev.mock && Boolean(settings.jev.baseUrl && settings.jev.apiKey);
 }

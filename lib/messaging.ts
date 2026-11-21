@@ -34,7 +34,7 @@ export type Request =
   | { type: 'gmail:cleanup:apply'; ids: string[]; mode: CleanupMode };
 
 export interface ResponseMap {
-  ping: { version: string; mode: 'mock' | 'live' };
+  ping: { version: string; mode: 'mock' | 'live'; provider: 'mock' | 'jev' | 'roar' };
   'settings:get': Settings;
   'settings:update': Settings;
   'jev:classifyEmail': EmailClassification;

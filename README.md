@@ -5,7 +5,7 @@ A Chrome extension that does two things:
 1. **Gmail organizer** — auto-labels recent mail by category, builds a priority view, and helps you unsubscribe from and archive bulk senders.
 2. **LinkedIn de-slop** — scores feed posts for value and blurs the low-value ones behind a click-to-reveal overlay.
 
-Both use the **Jev API** as the primary classifier, with **Sarvam** as a fallback for low-confidence results. Until the Jev API is live, the extension runs in **mock mode** using deterministic local heuristics — every feature works end to end.
+Both use the **Roar AI gateway** (OpenAI-compatible, via the official OpenAI SDK) as the primary classifier, with **Sarvam** as a fallback for low-confidence results. **Mock mode** uses deterministic local heuristics, so every feature works end to end without a network call.
 
 Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Visual system: [`docs/DESIGN.md`](docs/DESIGN.md). Manual test checklist: [`docs/TESTING.md`](docs/TESTING.md).
 
@@ -58,8 +58,22 @@ Open the extension's **Settings** page.
 
 ### AI
 
-- **Jev API** — base URL and key. Leave **Mock mode** on to use local heuristics.
-- **Sarvam fallback** — base URL, model, and key. Used only when Jev is unavailable or unsure.
+Jev uses the **Roar AI gateway** by default. It is OpenAI-compatible, so Jev uses the official OpenAI SDK.
+
+1. Add your key to `.env`:
+   ```
+   ROAR_API_KEY=...
+   ```
+   `.env` is gitignored. The key is read at build time and never committed.
+2. Optional overrides: `ROAR_BASE_URL` (default `https://api.roar-ai.com/v1`) and `ROAR_MODEL` (default `llama-3.3-70b`).
+3. Rebuild the extension. The **AI provider** section shows the gateway URL and a masked key.
+4. Test the gateway from the terminal:
+   ```bash
+   npm run test:roar
+   ```
+
+- **Mock mode** — turn on to use local heuristics without calling the gateway.
+- **Sarvam fallback** — base URL, model, and key. Used only when the primary result is low confidence.
 - **Privacy** — accept the data-sharing notice before using the extension.
 
 ### Gmail
@@ -113,6 +127,7 @@ Scroll the feed. Posts scoring below the threshold are blurred behind a reveal c
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` | Production build into `.output/chrome-mv3` |
 | `npm run compile` | Type-check only |
+| `npm run test:roar` | Send one chat request to the Roar AI gateway |
 | `npm run zip` | Package for distribution |
 
 ## Layout
@@ -126,7 +141,8 @@ entrypoints/
   linkedin.content/    LinkedIn content script
 lib/
   jev/                 typed API client (live + mock) and contracts
-  llm/                 Sarvam fallback client
+  roar/                OpenAI SDK client for the Roar AI gateway
+  llm/                 shared prompts and Sarvam fallback client
   gmail/               API, auth, labels, organizer, unsubscribe, cleanup
   linkedin/            detection, extraction, heuristics, overlay
   pipeline.ts          heuristic → Jev → Sarvam routing
@@ -136,11 +152,13 @@ lib/
   ui/                  generative primitives, score ring, avatars, error boundary
   storage.ts           typed settings
   messaging.ts         typed runtime messages
+scripts/
+  test-roar.mjs        one-shot gateway smoke test
 ```
 
 ## Privacy
 
-Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the Jev API, and to Sarvam when the fallback is used. Full email bodies are never sent. No analytics, no telemetry.
+Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the Roar AI gateway, and to Sarvam when the fallback is used. Full email bodies are never sent. No analytics, no telemetry.
 
 ## Troubleshooting
 
@@ -158,7 +176,7 @@ Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the
    - Test blur fails → the page selectors need updating (`lib/linkedin/dom.ts`).
 5. **Check the console** for `[jev]` logs (enable debug first).
 
-Leave **Mock mode** on until the Jev API is live. Sarvam is still used for posts the local heuristics can't confidently judge.
+Leave **Mock mode** on to use local heuristics. Sarvam is still used for posts the local heuristics can't confidently judge.
 
 ### Gmail errors
 
@@ -174,6 +192,7 @@ Leave **Mock mode** on until the Jev API is live. Sarvam is still used for posts
 
 ### AI errors
 
-- **Jev API unreachable / rate limited** — Jev retries once, then falls back to local heuristics (and Sarvam if configured). Check the base URL and key.
+- **Roar AI unreachable / rate limited** — Jev retries once, then falls back to local heuristics (and Sarvam if configured). Check `ROAR_API_KEY` and the gateway URL.
 - **Sarvam rejected the credentials** — verify the key and model in Settings.
-- **Everything scores 55** — mock mode is on and no heuristic matched. That's expected until the Jev API is live.
+- **Roar AI rejected the credentials** — check `ROAR_API_KEY` in `.env`, then rebuild the extension.
+- **Everything scores 55** — mock mode is on and no heuristic matched. Turn off **Mock mode** to use the gateway.

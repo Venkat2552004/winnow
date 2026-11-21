@@ -19,9 +19,11 @@ import {
 import { scanUnsubscribes } from '../lib/gmail/senders';
 import { performUnsubscribe } from '../lib/gmail/unsubscribe';
 import type { Envelope, Handlers, Request } from '../lib/messaging';
+import { resolveJevConfig } from '../lib/jev/client';
 import { classifyEmail, scorePost } from '../lib/pipeline';
 import { TaskQueue } from '../lib/queue';
-import { getSettings, isJevLive, updateSettings } from '../lib/storage';
+import { isRoarBaseUrl } from '../lib/roar/config';
+import { getSettings, updateSettings } from '../lib/storage';
 import { errorMessage } from '../lib/types';
 
 const metadataQueue = new TaskQueue(5);
@@ -52,9 +54,12 @@ export default defineBackground(() => {
   const handlers: Handlers = {
     ping: async () => {
       const settings = await getSettings();
+      const jev = resolveJevConfig(settings.jev);
+      const live = !jev.mock && Boolean(jev.baseUrl && jev.apiKey);
       return {
         version: chrome.runtime.getManifest().version,
-        mode: isJevLive(settings) ? 'live' : 'mock',
+        mode: live ? 'live' : 'mock',
+        provider: live ? (isRoarBaseUrl(jev.baseUrl) ? 'roar' : 'jev') : 'mock',
       };
     },
     'settings:get': () => getSettings(),

@@ -1,6 +1,7 @@
 import { describeHttpError, HttpError } from '../http';
 import { withRetry } from '../queue';
 import { clamp, errorMessage } from '../types';
+import { EMAIL_SYSTEM, extractJson, POST_SYSTEM } from './prompts';
 import {
   CATEGORY_PRIORITY_FLOOR,
   isEmailCategory,
@@ -21,15 +22,6 @@ interface ChatCompletionResponse {
 }
 
 const TIMEOUT_MS = 8000;
-
-function extractJson(content: string): unknown {
-  const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const body = fenced?.[1] ?? content;
-  const start = body.indexOf('{');
-  const end = body.lastIndexOf('}');
-  if (start === -1 || end === -1) throw new Error('Sarvam returned no JSON');
-  return JSON.parse(body.slice(start, end + 1));
-}
 
 async function chatJson(
   config: SarvamConfig,
@@ -85,18 +77,6 @@ async function chatJson(
   if (!content) throw new Error('Sarvam returned an empty completion');
   return extractJson(content);
 }
-
-const EMAIL_SYSTEM = `You classify email for a personal inbox.
-Return JSON only: {"category": string, "priority": number, "confidence": number, "reason": string}.
-category must be one of: action_required, personal, bank_statement, invoice, receipt, security_alert, travel, legal, newsletter, notification, promotion, other.
-priority is 0-100 where 70+ means the user should see it today.
-confidence is 0-1. reason is one short sentence.`;
-
-const POST_SYSTEM = `You rate LinkedIn posts for usefulness to a busy professional.
-Return JSON only: {"score": number, "confidence": number, "labels": string[], "reason": string}.
-score is 0-100 where 0 is pure engagement bait and 100 is genuinely insightful.
-labels may include: engagement_bait, hype, promotional, hashtag_spam, repost, thin_content, viral_slop, insightful, technical, news.
-confidence is 0-1. reason is one short sentence.`;
 
 export async function sarvamClassifyEmail(
   input: EmailInput,

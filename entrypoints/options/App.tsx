@@ -98,9 +98,11 @@ export default function App() {
     setTesting(true);
     try {
       const ping = await sendMessage({ type: 'ping' });
+      const provider =
+        ping.provider === 'roar' ? 'Roar AI' : ping.provider === 'jev' ? 'Jev API' : 'mock';
       setToast({
         kind: 'ok',
-        text: `Background worker OK · v${ping.version} · ${ping.mode} mode`,
+        text: `Background worker OK · v${ping.version} · ${provider} · ${ping.mode} mode`,
       });
     } catch (error) {
       setToast({ kind: 'err', text: errorMessage(error) });
@@ -392,8 +394,8 @@ export default function App() {
                 locally.
               </li>
               <li>
-                <strong>AI</strong> — email metadata and post text go to the Jev API, and to Sarvam
-                when the fallback is used. Full email bodies never leave the browser.
+                <strong>AI</strong> — email metadata and post text go to the Roar AI gateway, and
+                to Sarvam when the fallback is used. Full email bodies never leave the browser.
               </li>
             </ul>
             <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
@@ -417,14 +419,14 @@ export default function App() {
         <SectionHead
           seed="jev-api"
           hue={230}
-          title="Jev API"
-          subtitle="Primary classifier. Mock mode uses deterministic local rules."
+          title="AI provider"
+          subtitle="OpenAI-compatible gateway. Mock mode uses deterministic local rules."
         />
         <div className="field">
           <label htmlFor="jev-base">Base URL</label>
           <input
             id="jev-base"
-            placeholder="https://api.jev.example"
+            placeholder="https://api.roar-ai.com/v1"
             value={draft.jev.baseUrl}
             onChange={(event) => setJev({ baseUrl: event.target.value })}
           />
@@ -434,11 +436,24 @@ export default function App() {
           <input
             id="jev-key"
             type="password"
-            placeholder="jev_…"
+            placeholder="roar_…"
             value={draft.jev.apiKey}
             onChange={(event) => setJev({ apiKey: event.target.value })}
           />
         </div>
+        <p className="muted small">
+          Roar AI uses <strong>llama-3.3-70b</strong> through the official OpenAI SDK.{' '}
+          {draft.jev.baseUrl.includes('roar-ai.com') && !draft.jev.apiKey ? (
+            <>
+              Using <code>ROAR_API_KEY</code> from <code>.env</code>.
+            </>
+          ) : (
+            <>
+              A <code>ROAR_API_KEY</code> in <code>.env</code> fills these defaults at build
+              time.
+            </>
+          )}
+        </p>
         <div className="row">
           <div>
             <h2>Mock mode</h2>

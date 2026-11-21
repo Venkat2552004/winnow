@@ -42,6 +42,7 @@ export default function App() {
   const [diagError, setDiagError] = useState<string | null>(null);
   const [probe, setProbe] = useState<DomProbe | null>(null);
   const [mode, setMode] = useState<'mock' | 'live'>('mock');
+  const [provider, setProvider] = useState<'mock' | 'jev' | 'roar'>('mock');
   const [version, setVersion] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
   const [priority, setPriority] = useState<PriorityEntry[] | null>(null);
@@ -57,6 +58,7 @@ export default function App() {
         ]);
         setSettings(loaded);
         setMode(ping.mode);
+        setProvider(ping.provider);
         setVersion(ping.version);
         setStats(today);
       } catch (error) {
@@ -195,7 +197,7 @@ export default function App() {
       <div className="card stack" style={{ gap: 8 }}>
         <StatusRow
           label="AI mode"
-          value={mode === 'live' ? 'Jev live' : 'Mock'}
+          value={provider === 'roar' ? 'Roar live' : provider === 'jev' ? 'Jev live' : 'Mock'}
           hue={mode === 'live' ? 152 : 38}
         />
         <StatusRow

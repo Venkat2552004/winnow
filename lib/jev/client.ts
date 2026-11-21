@@ -3,6 +3,8 @@ import { withRetry } from '../queue';
 import { clamp, errorMessage } from '../types';
 import { heuristicEmailClassification } from '../gmail/heuristics';
 import { heuristicPostScore } from '../linkedin/heuristics';
+import { createRoarJevClient } from '../roar/client';
+import { isRoarBaseUrl, ROAR_BASE_URL } from '../roar/config';
 import {
   CATEGORY_PRIORITY_FLOOR,
   isEmailCategory,
@@ -144,7 +146,31 @@ function createMockClient(): JevClient {
   };
 }
 
+/**
+ * Merges stored settings with the build-time Roar key. A key in .env is enough
+ * to go live; explicit settings always win.
+ */
+export function resolveJevConfig(config: JevConfig): JevConfig {
+  const env =
+    (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+  const envKey = env.ROAR_API_KEY?.trim() ?? '';
+  const envBaseUrl = env.ROAR_BASE_URL?.trim() || ROAR_BASE_URL;
+  const baseUrl = config.baseUrl.trim() || (envKey ? envBaseUrl : '');
+  const apiKey = config.apiKey.trim() || envKey;
+  const usingEnvOnly = !config.baseUrl.trim() && !config.apiKey.trim() && Boolean(envKey);
+
+  return {
+    baseUrl,
+    apiKey,
+    mock: usingEnvOnly ? false : config.mock,
+  };
+}
+
 export function createJevClient(config: JevConfig): JevClient {
-  const live = !config.mock && Boolean(config.baseUrl.trim() && config.apiKey.trim());
-  return live ? createLiveClient(config) : createMockClient();
+  const resolved = resolveJevConfig(config);
+  const live = !resolved.mock && Boolean(resolved.baseUrl.trim() && resolved.apiKey.trim());
+  if (!live) return createMockClient();
+  return isRoarBaseUrl(resolved.baseUrl)
+    ? createRoarJevClient(resolved)
+    : createLiveClient(resolved);
 }
