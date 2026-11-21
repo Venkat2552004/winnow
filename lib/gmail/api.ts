@@ -1,3 +1,4 @@
+import { errorMessage } from '../types';
 import type { GmailLabel, GmailMessageMeta } from './types';
 
 const BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
@@ -13,13 +14,21 @@ export class GmailApiError extends Error {
 }
 
 async function request<T>(token: string, path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: {
-      authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      ...init,
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+    });
+  } catch (error) {
+    throw new GmailApiError(
+      0,
+      `Could not reach the Gmail API (${errorMessage(error)}). Check the extension's host permissions.`,
+    );
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');

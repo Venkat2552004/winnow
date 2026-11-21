@@ -13,6 +13,12 @@ body {
   gap: 12px;
 }
 
+.toast {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+}
+
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;

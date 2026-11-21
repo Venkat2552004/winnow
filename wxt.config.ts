@@ -9,7 +9,8 @@ export default defineConfig({
     host_permissions: [
       'https://mail.google.com/*',
       'https://*.linkedin.com/*',
-      'https://www.googleapis.com/*',
+      'https://gmail.googleapis.com/*',
+      'https://oauth2.googleapis.com/*',
     ],
     optional_host_permissions: ['https://*/*'],
   },

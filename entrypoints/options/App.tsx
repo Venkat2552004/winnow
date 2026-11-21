@@ -14,6 +14,7 @@ export default function App() {
   const [gmailStatus, setGmailStatus] = useState<GmailStatus | null>(null);
   const [recent, setRecent] = useState<GmailMessageMeta[] | null>(null);
   const [gmailBusy, setGmailBusy] = useState(false);
+  const [gmailError, setGmailError] = useState<string | null>(null);
 
   useEffect(() => {
     void getSettings().then((settings) => {
@@ -75,6 +76,7 @@ export default function App() {
   async function connectGmail(): Promise<void> {
     if (!draft) return;
     setGmailBusy(true);
+    setGmailError(null);
     try {
       // Persist the client ID before the background reads it.
       const next = await updateSettings(draft);
@@ -84,6 +86,7 @@ export default function App() {
       setGmailStatus({ connected: true, email: result.email, clientIdConfigured: true });
       setToast({ kind: 'ok', text: `Connected ${result.email ?? 'Gmail'}` });
     } catch (error) {
+      setGmailError(errorMessage(error));
       setToast({ kind: 'err', text: errorMessage(error) });
     } finally {
       setGmailBusy(false);
@@ -92,6 +95,7 @@ export default function App() {
 
   async function disconnectGmail(): Promise<void> {
     setGmailBusy(true);
+    setGmailError(null);
     try {
       await sendMessage({ type: 'gmail:disconnect' });
       setGmailStatus((previous) => ({
@@ -102,6 +106,7 @@ export default function App() {
       setRecent(null);
       setToast({ kind: 'ok', text: 'Gmail disconnected' });
     } catch (error) {
+      setGmailError(errorMessage(error));
       setToast({ kind: 'err', text: errorMessage(error) });
     } finally {
       setGmailBusy(false);
@@ -110,10 +115,16 @@ export default function App() {
 
   async function loadRecent(): Promise<void> {
     setGmailBusy(true);
+    setGmailError(null);
     try {
       const result = await sendMessage({ type: 'gmail:recent', limit: 10 });
       setRecent(result.messages);
+      setToast({
+        kind: 'ok',
+        text: result.messages.length > 0 ? `Loaded ${result.messages.length} messages` : 'No messages in the lookback window',
+      });
     } catch (error) {
+      setGmailError(errorMessage(error));
       setToast({ kind: 'err', text: errorMessage(error) });
     } finally {
       setGmailBusy(false);
@@ -276,6 +287,8 @@ export default function App() {
             {recent && <span className="small muted">{recent.length} messages</span>}
           </div>
         )}
+
+        {gmailError && <div className="toast err">{gmailError}</div>}
 
         {recent && recent.length > 0 && (
           <div className="stack" style={{ gap: 6 }}>
