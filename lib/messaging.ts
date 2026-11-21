@@ -1,3 +1,4 @@
+import type { GmailMessageMeta, GmailStatus } from './gmail/types';
 import type { EmailClassification, EmailInput, PostInput, PostScore } from './jev/types';
 import type { Settings } from './storage';
 import type { DeepPartial } from './types';
@@ -8,7 +9,11 @@ export type Request =
   | { type: 'settings:update'; patch: DeepPartial<Settings> }
   | { type: 'jev:classifyEmail'; input: EmailInput }
   | { type: 'jev:scorePost'; input: PostInput }
-  | { type: 'cache:clear' };
+  | { type: 'cache:clear' }
+  | { type: 'gmail:status' }
+  | { type: 'gmail:connect' }
+  | { type: 'gmail:disconnect' }
+  | { type: 'gmail:recent'; limit?: number };
 
 export interface ResponseMap {
   ping: { version: string; mode: 'mock' | 'live' };
@@ -17,6 +22,10 @@ export interface ResponseMap {
   'jev:classifyEmail': EmailClassification;
   'jev:scorePost': PostScore;
   'cache:clear': { cleared: true };
+  'gmail:status': GmailStatus;
+  'gmail:connect': { email: string | null };
+  'gmail:disconnect': { ok: true };
+  'gmail:recent': { messages: GmailMessageMeta[] };
 }
 
 export type RequestType = Request['type'];

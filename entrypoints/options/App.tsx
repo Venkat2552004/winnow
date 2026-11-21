@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { GmailMessageMeta, GmailStatus } from '../../lib/gmail/types';
 import { sendMessage } from '../../lib/messaging';
 import { getSettings, updateSettings, type Settings } from '../../lib/storage';
 import { errorMessage } from '../../lib/types';
@@ -10,12 +11,18 @@ export default function App() {
   const [saved, setSaved] = useState<Settings | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [testing, setTesting] = useState(false);
+  const [gmailStatus, setGmailStatus] = useState<GmailStatus | null>(null);
+  const [recent, setRecent] = useState<GmailMessageMeta[] | null>(null);
+  const [gmailBusy, setGmailBusy] = useState(false);
 
   useEffect(() => {
     void getSettings().then((settings) => {
       setDraft(settings);
       setSaved(settings);
     });
+    void sendMessage({ type: 'gmail:status' })
+      .then(setGmailStatus)
+      .catch(() => undefined);
   }, []);
 
   const setJev = (value: Partial<Settings['jev']>): void =>
@@ -62,6 +69,54 @@ export default function App() {
       setToast({ kind: 'ok', text: 'Cache cleared' });
     } catch (error) {
       setToast({ kind: 'err', text: errorMessage(error) });
+    }
+  }
+
+  async function connectGmail(): Promise<void> {
+    if (!draft) return;
+    setGmailBusy(true);
+    try {
+      // Persist the client ID before the background reads it.
+      const next = await updateSettings(draft);
+      setDraft(next);
+      setSaved(next);
+      const result = await sendMessage({ type: 'gmail:connect' });
+      setGmailStatus({ connected: true, email: result.email, clientIdConfigured: true });
+      setToast({ kind: 'ok', text: `Connected ${result.email ?? 'Gmail'}` });
+    } catch (error) {
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setGmailBusy(false);
+    }
+  }
+
+  async function disconnectGmail(): Promise<void> {
+    setGmailBusy(true);
+    try {
+      await sendMessage({ type: 'gmail:disconnect' });
+      setGmailStatus((previous) => ({
+        connected: false,
+        email: null,
+        clientIdConfigured: previous?.clientIdConfigured ?? true,
+      }));
+      setRecent(null);
+      setToast({ kind: 'ok', text: 'Gmail disconnected' });
+    } catch (error) {
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setGmailBusy(false);
+    }
+  }
+
+  async function loadRecent(): Promise<void> {
+    setGmailBusy(true);
+    try {
+      const result = await sendMessage({ type: 'gmail:recent', limit: 10 });
+      setRecent(result.messages);
+    } catch (error) {
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setGmailBusy(false);
     }
   }
 
@@ -182,6 +237,77 @@ export default function App() {
             <span />
           </label>
         </div>
+
+        <div className="row">
+          <div>
+            <h2>Connection</h2>
+            <p className="muted small">
+              {gmailStatus?.connected
+                ? `Connected as ${gmailStatus.email ?? 'unknown account'}`
+                : gmailStatus?.clientIdConfigured
+                  ? 'Not connected'
+                  : 'Add a client ID below, then connect'}
+            </p>
+          </div>
+          {gmailStatus?.connected ? (
+            <button
+              className="btn danger"
+              onClick={() => void disconnectGmail()}
+              disabled={gmailBusy}
+            >
+              Disconnect
+            </button>
+          ) : (
+            <button
+              className="btn primary"
+              onClick={() => void connectGmail()}
+              disabled={gmailBusy || !draft.gmail.clientId}
+            >
+              {gmailBusy ? 'Connecting…' : 'Connect Gmail'}
+            </button>
+          )}
+        </div>
+
+        {gmailStatus?.connected && (
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn" onClick={() => void loadRecent()} disabled={gmailBusy}>
+              {gmailBusy ? 'Loading…' : 'Load recent mail'}
+            </button>
+            {recent && <span className="small muted">{recent.length} messages</span>}
+          </div>
+        )}
+
+        {recent && recent.length > 0 && (
+          <div className="stack" style={{ gap: 6 }}>
+            {recent.map((message) => (
+              <div key={message.id} className="row" style={{ gap: 8, alignItems: 'baseline' }}>
+                <span
+                  className="small"
+                  style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {message.subject}
+                </span>
+                <span
+                  className="small muted"
+                  style={{
+                    maxWidth: 180,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {message.from}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="field">
           <label htmlFor="gmail-client">OAuth client ID</label>
           <input
@@ -190,6 +316,10 @@ export default function App() {
             value={draft.gmail.clientId}
             onChange={(event) => setGmail({ clientId: event.target.value })}
           />
+          <p className="muted small">
+            Authorized redirect URI:{' '}
+            <code style={{ userSelect: 'all' }}>{chrome.identity.getRedirectURL()}</code>
+          </p>
         </div>
         <div className="grid-2">
           <div className="field">

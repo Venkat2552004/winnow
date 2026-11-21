@@ -1,11 +1,42 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { cacheClear } from '../lib/cache';
+import { getMessageMeta, GmailApiError, listMessageIds } from '../lib/gmail/api';
+import {
+  clearToken,
+  connectGmail,
+  disconnectGmail,
+  getAccessToken,
+  getConnectedEmail,
+} from '../lib/gmail/auth';
+import type { GmailMessageMeta } from '../lib/gmail/types';
 import type { Envelope, Handlers, Request } from '../lib/messaging';
 import { classifyEmail, scorePost } from '../lib/pipeline';
+import { TaskQueue } from '../lib/queue';
 import { getSettings, isJevLive, updateSettings } from '../lib/storage';
 import { errorMessage } from '../lib/types';
 
+const metadataQueue = new TaskQueue(5);
+
 export default defineBackground(() => {
+  async function withGmailToken<T>(run: (token: string) => Promise<T>): Promise<T> {
+    const settings = await getSettings();
+    if (!settings.gmail.clientId) {
+      throw new Error('Add your Gmail OAuth client ID in settings first');
+    }
+
+    let token = await getAccessToken(settings.gmail.clientId, false);
+    try {
+      return await run(token);
+    } catch (error) {
+      if (error instanceof GmailApiError && error.status === 401) {
+        await clearToken();
+        token = await getAccessToken(settings.gmail.clientId, false);
+        return run(token);
+      }
+      throw error;
+    }
+  }
+
   const handlers: Handlers = {
     ping: async () => {
       const settings = await getSettings();
@@ -21,6 +52,44 @@ export default defineBackground(() => {
     'cache:clear': async () => {
       await cacheClear();
       return { cleared: true };
+    },
+
+    'gmail:status': async () => {
+      const settings = await getSettings();
+      const email = await getConnectedEmail();
+      return {
+        connected: Boolean(email),
+        email,
+        clientIdConfigured: Boolean(settings.gmail.clientId),
+      };
+    },
+    'gmail:connect': async () => {
+      const settings = await getSettings();
+      if (!settings.gmail.clientId) {
+        throw new Error('Add your Gmail OAuth client ID in settings first');
+      }
+      const email = await connectGmail(settings.gmail.clientId);
+      return { email };
+    },
+    'gmail:disconnect': async () => {
+      await disconnectGmail();
+      return { ok: true };
+    },
+    'gmail:recent': async ({ limit }) => {
+      const settings = await getSettings();
+      const count = limit ?? 10;
+
+      return withGmailToken(async (token) => {
+        const ids = await listMessageIds(
+          token,
+          `newer_than:${settings.gmail.lookbackDays}d -in:chats`,
+          count,
+        );
+        const messages: GmailMessageMeta[] = await Promise.all(
+          ids.map((id) => metadataQueue.run(() => getMessageMeta(token, id))),
+        );
+        return { messages };
+      });
     },
   };
 
