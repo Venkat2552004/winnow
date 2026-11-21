@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { sendMessage } from '../../lib/messaging';
+import { getTodayStats, type DayStats } from '../../lib/stats';
 import { getSettings, onSettingsChanged, updateSettings, type Settings } from '../../lib/storage';
 import { errorMessage, type DeepPartial } from '../../lib/types';
 
@@ -7,6 +8,7 @@ type Toast = { kind: 'ok' | 'err'; text: string };
 
 export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [stats, setStats] = useState<DayStats | null>(null);
   const [mode, setMode] = useState<'mock' | 'live'>('mock');
   const [version, setVersion] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
@@ -14,10 +16,15 @@ export default function App() {
   useEffect(() => {
     void (async () => {
       try {
-        const [loaded, ping] = await Promise.all([getSettings(), sendMessage({ type: 'ping' })]);
+        const [loaded, ping, today] = await Promise.all([
+          getSettings(),
+          sendMessage({ type: 'ping' }),
+          getTodayStats(),
+        ]);
         setSettings(loaded);
         setMode(ping.mode);
         setVersion(ping.version);
+        setStats(today);
       } catch (error) {
         setToast({ kind: 'err', text: errorMessage(error) });
       }
@@ -134,6 +141,26 @@ export default function App() {
             }
           />
         </div>
+
+        <div className="divider" />
+
+        <div className="row">
+          <span className="small muted">Pause on LinkedIn</span>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={settings.linkedin.paused}
+              onChange={(event) => void patch({ linkedin: { paused: event.target.checked } })}
+            />
+            <span />
+          </label>
+        </div>
+
+        {stats && (
+          <p className="small muted">
+            Today: {stats.scored} scored · {stats.blurred} blurred · {stats.revealed} revealed
+          </p>
+        )}
       </div>
 
       {!settings.consent.dataSharingAccepted && (

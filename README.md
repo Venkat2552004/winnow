@@ -15,8 +15,8 @@ Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 |---|---|
 | 0 — Scaffold | ✅ done |
 | 1 — AI layer | ✅ done (mock + live client, fallback, cache, queue) |
-| 2 — LinkedIn blur | ⏳ next |
-| 3 — Gmail auth + read | ⏳ |
+| 2 — LinkedIn blur | ✅ done (detection, scoring, blur overlay, stats) |
+| 3 — Gmail auth + read | ⏳ next |
 | 4 — Gmail classify + label | ⏳ |
 | 5 — Unsubscribe + cleanup | ⏳ |
 | 6 — Polish | ⏳ |
