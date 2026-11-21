@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
   DIAGNOSE_MESSAGE,
+  PROBE_MESSAGE,
   TEST_BLUR_MESSAGE,
   type LinkedInDiagnostics,
   type TestBlurResult,
 } from '../../lib/linkedin/diagnostics';
+import type { DomProbe } from '../../lib/linkedin/probe';
 import { sendMessage } from '../../lib/messaging';
 import { getTodayStats, type DayStats } from '../../lib/stats';
 import { getSettings, onSettingsChanged, updateSettings, type Settings } from '../../lib/storage';
@@ -17,6 +19,7 @@ export default function App() {
   const [stats, setStats] = useState<DayStats | null>(null);
   const [diag, setDiag] = useState<LinkedInDiagnostics | null>(null);
   const [diagError, setDiagError] = useState<string | null>(null);
+  const [probe, setProbe] = useState<DomProbe | null>(null);
   const [mode, setMode] = useState<'mock' | 'live'>('mock');
   const [version, setVersion] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
@@ -92,6 +95,33 @@ export default function App() {
       setToast({ kind: 'ok', text: `Test blur applied to ${result.urn}` });
     } catch (error) {
       setDiagError(errorMessage(error));
+    }
+  }
+
+  async function runProbe(): Promise<void> {
+    setDiag(null);
+    setDiagError(null);
+    setProbe(null);
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) throw new Error('No active tab');
+      const result = (await chrome.tabs.sendMessage(tab.id, {
+        type: PROBE_MESSAGE,
+      })) as DomProbe | undefined;
+      if (!result) throw new Error('No response — reload the LinkedIn tab');
+      setProbe(result);
+    } catch (error) {
+      setDiagError(errorMessage(error));
+    }
+  }
+
+  async function copyProbe(): Promise<void> {
+    if (!probe) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(probe, null, 2));
+      setToast({ kind: 'ok', text: 'Probe copied to clipboard' });
+    } catch {
+      setToast({ kind: 'err', text: 'Copy failed — select the text manually' });
     }
   }
 
@@ -216,6 +246,36 @@ export default function App() {
             Test blur
           </button>
         </div>
+
+        <button className="btn" onClick={() => void runProbe()}>
+          DOM probe
+        </button>
+
+        {probe && (
+          <div className="stack" style={{ gap: 6 }}>
+            <textarea
+              readOnly
+              value={JSON.stringify(probe, null, 2)}
+              rows={10}
+              style={{
+                width: '100%',
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                fontSize: 10,
+                lineHeight: 1.4,
+                background: 'var(--bg)',
+                color: 'var(--text)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                padding: 8,
+                resize: 'vertical',
+              }}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <button className="btn" onClick={() => void copyProbe()}>
+              Copy probe
+            </button>
+          </div>
+        )}
 
         {diagError && <div className="toast err">{diagError}</div>}
 

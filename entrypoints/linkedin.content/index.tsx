@@ -2,11 +2,13 @@ import { defineContentScript } from 'wxt/utils/define-content-script';
 import type { PostScore } from '../../lib/jev/types';
 import {
   DIAGNOSE_MESSAGE,
+  PROBE_MESSAGE,
   TEST_BLUR_MESSAGE,
   type LinkedInDiagnostics,
   type TestBlurResult,
 } from '../../lib/linkedin/diagnostics';
 import { extractPost, findPostRoots, getUrn } from '../../lib/linkedin/dom';
+import { probeDom } from '../../lib/linkedin/probe';
 import {
   BLUR_CLASS,
   OVERLAY_CLASS,
@@ -200,6 +202,11 @@ export default defineContentScript({
 
       if (type === DIAGNOSE_MESSAGE) {
         sendResponse(diagnostics());
+        return false;
+      }
+
+      if (type === PROBE_MESSAGE) {
+        sendResponse(probeDom());
         return false;
       }
 

@@ -1,7 +1,7 @@
 import type { PostInput } from '../jev/types';
 
 /** Post-like URNs. Comments and member URNs are excluded. */
-const POST_URN = /^urn:li:(activity|aggregate|ugcPost|share):/;
+const POST_URN = /^urn:li:(activity|aggregate|ugcPost|share|fsd_update|fsd_post):/;
 
 const ROOT_SELECTORS = [
   '[data-urn^="urn:li:"]',
@@ -63,9 +63,12 @@ export function getUrn(element: HTMLElement): string | null {
   const own = urnOf(element);
   if (own) return own;
 
-  const nested = element.querySelector<HTMLElement>('[data-urn^="urn:li:"], [data-id^="urn:li:"]');
-  const nestedUrn = nested?.getAttribute('data-urn') ?? nested?.getAttribute('data-id');
-  return nestedUrn && POST_URN.test(nestedUrn) ? nestedUrn : null;
+  const nested = element.querySelectorAll<HTMLElement>('[data-urn^="urn:li:"], [data-id^="urn:li:"]');
+  for (const node of nested) {
+    const value = node.getAttribute('data-urn') ?? node.getAttribute('data-id');
+    if (value && POST_URN.test(value)) return value;
+  }
+  return null;
 }
 
 function isBetterRoot(candidate: HTMLElement, current: HTMLElement): boolean {

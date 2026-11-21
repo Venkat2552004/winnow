@@ -1,5 +1,6 @@
 export const DIAGNOSE_MESSAGE = 'linkedin:diagnose';
 export const TEST_BLUR_MESSAGE = 'linkedin:test-blur';
+export const PROBE_MESSAGE = 'linkedin:probe';
 
 export interface TestBlurResult {
   ok: boolean;
