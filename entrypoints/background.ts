@@ -9,6 +9,12 @@ import {
   getConnectedEmail,
 } from '../lib/gmail/auth';
 import type { GmailMessageMeta } from '../lib/gmail/types';
+import {
+  applyLabels,
+  clearOrganizerState,
+  getPriorityItems,
+  previewRecent,
+} from '../lib/gmail/organizer';
 import type { Envelope, Handlers, Request } from '../lib/messaging';
 import { classifyEmail, scorePost } from '../lib/pipeline';
 import { TaskQueue } from '../lib/queue';
@@ -90,6 +96,24 @@ export default defineBackground(() => {
         );
         return { messages };
       });
+    },
+    'gmail:preview': async () => {
+      const settings = await getSettings();
+      return withGmailToken(async (token) => ({ rows: await previewRecent(token, settings) }));
+    },
+    'gmail:apply': async ({ rows }) => {
+      return withGmailToken(async (token) => applyLabels(token, rows));
+    },
+    'gmail:priority': async () => {
+      const settings = await getSettings();
+      const items = await getPriorityItems(50);
+      return {
+        items: items.filter((item) => item.priority >= settings.gmail.priorityThreshold),
+      };
+    },
+    'gmail:reset': async () => {
+      await clearOrganizerState();
+      return { ok: true };
     },
   };
 

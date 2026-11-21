@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { GmailMessageMeta, GmailStatus } from '../../lib/gmail/types';
+import type { GmailMessageMeta, GmailStatus, OrganizeRow } from '../../lib/gmail/types';
 import { sendMessage } from '../../lib/messaging';
 import { getSettings, updateSettings, type Settings } from '../../lib/storage';
 import { errorMessage } from '../../lib/types';
@@ -15,6 +15,8 @@ export default function App() {
   const [recent, setRecent] = useState<GmailMessageMeta[] | null>(null);
   const [gmailBusy, setGmailBusy] = useState(false);
   const [gmailError, setGmailError] = useState<string | null>(null);
+  const [previewRows, setPreviewRows] = useState<OrganizeRow[] | null>(null);
+  const [organizing, setOrganizing] = useState(false);
 
   useEffect(() => {
     void getSettings().then((settings) => {
@@ -128,6 +130,49 @@ export default function App() {
       setToast({ kind: 'err', text: errorMessage(error) });
     } finally {
       setGmailBusy(false);
+    }
+  }
+
+  async function previewMail(): Promise<void> {
+    setOrganizing(true);
+    setGmailError(null);
+    try {
+      const result = await sendMessage({ type: 'gmail:preview' });
+      setPreviewRows(result.rows);
+      setToast({ kind: 'ok', text: `Classified ${result.rows.length} messages` });
+    } catch (error) {
+      setGmailError(errorMessage(error));
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setOrganizing(false);
+    }
+  }
+
+  async function applyLabels(): Promise<void> {
+    if (!previewRows) return;
+    setOrganizing(true);
+    setGmailError(null);
+    try {
+      const result = await sendMessage({ type: 'gmail:apply', rows: previewRows });
+      setToast({
+        kind: 'ok',
+        text: `Labeled ${result.labeled} · skipped ${result.skipped} · total ${result.total}`,
+      });
+    } catch (error) {
+      setGmailError(errorMessage(error));
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setOrganizing(false);
+    }
+  }
+
+  async function resetOrganizer(): Promise<void> {
+    try {
+      await sendMessage({ type: 'gmail:reset' });
+      setPreviewRows(null);
+      setToast({ kind: 'ok', text: 'Label memory cleared' });
+    } catch (error) {
+      setToast({ kind: 'err', text: errorMessage(error) });
     }
   }
 
@@ -321,6 +366,64 @@ export default function App() {
           </div>
         )}
 
+        <div className="row" style={{ gap: 8 }}>
+          <button
+            className="btn"
+            onClick={() => void previewMail()}
+            disabled={organizing || !gmailStatus?.connected}
+          >
+            {organizing ? 'Working…' : 'Preview classification'}
+          </button>
+          <button
+            className="btn primary"
+            onClick={() => void applyLabels()}
+            disabled={organizing || !previewRows}
+          >
+            Apply labels
+          </button>
+        </div>
+
+        {previewRows && (
+          <div className="stack" style={{ gap: 6 }}>
+            <p className="small muted">
+              {previewRows.length} messages ·{' '}
+              {
+                previewRows.filter(
+                  (row) => row.classification.priority >= draft.gmail.priorityThreshold,
+                ).length
+              }{' '}
+              priority
+            </p>
+            {previewRows.slice(0, 50).map((row) => (
+              <div
+                key={row.message.id}
+                className="row"
+                style={{ gap: 8, alignItems: 'baseline' }}
+                title={`${row.classification.reason}\n${row.labelNames.join(', ')}`}
+              >
+                <span
+                  className="small"
+                  style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {row.message.subject}
+                </span>
+                <span className="badge">{row.classification.category}</span>
+                <span className="small muted" style={{ width: 28, textAlign: 'right' }}>
+                  {row.classification.priority}
+                </span>
+              </div>
+            ))}
+            {previewRows.length > 50 && (
+              <p className="small muted">Showing top 50 of {previewRows.length}</p>
+            )}
+          </div>
+        )}
+
         <div className="field">
           <label htmlFor="gmail-client">OAuth client ID</label>
           <input
@@ -471,9 +574,14 @@ export default function App() {
       </section>
 
       <footer className="row">
-        <button className="btn danger" onClick={() => void clearCache()}>
-          Clear cached scores
-        </button>
+        <div className="row" style={{ gap: 8 }}>
+          <button className="btn danger" onClick={() => void clearCache()}>
+            Clear cached scores
+          </button>
+          <button className="btn danger" onClick={() => void resetOrganizer()}>
+            Reset label memory
+          </button>
+        </div>
         <button className="btn primary" onClick={() => void save()} disabled={!dirty}>
           Save settings
         </button>

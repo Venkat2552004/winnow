@@ -6,6 +6,7 @@ import {
   type LinkedInDiagnostics,
   type TestBlurResult,
 } from '../../lib/linkedin/diagnostics';
+import type { PriorityEntry } from '../../lib/gmail/types';
 import type { DomProbe } from '../../lib/linkedin/probe';
 import { sendMessage } from '../../lib/messaging';
 import { getTodayStats, type DayStats } from '../../lib/stats';
@@ -23,6 +24,7 @@ export default function App() {
   const [mode, setMode] = useState<'mock' | 'live'>('mock');
   const [version, setVersion] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
+  const [priority, setPriority] = useState<PriorityEntry[] | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -40,8 +42,18 @@ export default function App() {
         setToast({ kind: 'err', text: errorMessage(error) });
       }
     })();
+    void loadPriority();
     return onSettingsChanged(setSettings);
   }, []);
+
+  async function loadPriority(): Promise<void> {
+    try {
+      const result = await sendMessage({ type: 'gmail:priority' });
+      setPriority(result.items);
+    } catch {
+      setPriority([]);
+    }
+  }
 
   async function patch(update: DeepPartial<Settings>): Promise<void> {
     try {
@@ -179,6 +191,53 @@ export default function App() {
             <span />
           </label>
         </div>
+
+        {priority && priority.length > 0 && (
+          <>
+            <div className="divider" />
+            <div className="row">
+              <span className="small muted">Priority inbox</span>
+              <button className="btn" style={{ padding: '2px 8px' }} onClick={() => void loadPriority()}>
+                Refresh
+              </button>
+            </div>
+            <div className="stack" style={{ gap: 6 }}>
+              {priority.slice(0, 5).map((item) => (
+                <a
+                  key={item.id}
+                  className="row"
+                  style={{ gap: 8, alignItems: 'baseline', textDecoration: 'none' }}
+                  href={`https://mail.google.com/mail/u/0/#all/${item.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={item.reason}
+                >
+                  <span
+                    className="small"
+                    style={{
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.subject}
+                  </span>
+                  <span className="badge">{item.category}</span>
+                  <span className="small muted" style={{ width: 24, textAlign: 'right' }}>
+                    {item.priority}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </>
+        )}
+
+        {priority && priority.length === 0 && (
+          <p className="small muted">
+            No priority mail yet — run the organizer from Settings.
+          </p>
+        )}
       </div>
 
       <div className="card stack">

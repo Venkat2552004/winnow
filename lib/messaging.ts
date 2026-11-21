@@ -1,4 +1,10 @@
-import type { GmailMessageMeta, GmailStatus } from './gmail/types';
+import type {
+  GmailMessageMeta,
+  GmailStatus,
+  OrganizeRow,
+  OrganizeSummary,
+  PriorityEntry,
+} from './gmail/types';
 import type { EmailClassification, EmailInput, PostInput, PostScore } from './jev/types';
 import type { Settings } from './storage';
 import type { DeepPartial } from './types';
@@ -13,7 +19,11 @@ export type Request =
   | { type: 'gmail:status' }
   | { type: 'gmail:connect' }
   | { type: 'gmail:disconnect' }
-  | { type: 'gmail:recent'; limit?: number };
+  | { type: 'gmail:recent'; limit?: number }
+  | { type: 'gmail:preview' }
+  | { type: 'gmail:apply'; rows: OrganizeRow[] }
+  | { type: 'gmail:priority' }
+  | { type: 'gmail:reset' };
 
 export interface ResponseMap {
   ping: { version: string; mode: 'mock' | 'live' };
@@ -26,6 +36,10 @@ export interface ResponseMap {
   'gmail:connect': { email: string | null };
   'gmail:disconnect': { ok: true };
   'gmail:recent': { messages: GmailMessageMeta[] };
+  'gmail:preview': { rows: OrganizeRow[] };
+  'gmail:apply': OrganizeSummary;
+  'gmail:priority': { items: PriorityEntry[] };
+  'gmail:reset': { ok: true };
 }
 
 export type RequestType = Request['type'];
