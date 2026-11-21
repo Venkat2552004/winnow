@@ -15,6 +15,8 @@ import {
 } from './types';
 
 export interface JevConfig {
+  /** Use the Roar AI gateway from .env instead of the custom fields. */
+  useRoar?: boolean;
   baseUrl: string;
   apiKey: string;
   mock: boolean;
@@ -147,22 +149,30 @@ function createMockClient(): JevClient {
 }
 
 /**
- * Merges stored settings with the build-time Roar key. A key in .env is enough
- * to go live; explicit settings always win.
+ * Resolves the effective provider. When the Roar key is present and the user
+ * has not switched to a custom provider, the gateway from .env always wins.
  */
 export function resolveJevConfig(config: JevConfig): JevConfig {
   const env =
     (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
   const envKey = env.ROAR_API_KEY?.trim() ?? '';
   const envBaseUrl = env.ROAR_BASE_URL?.trim() || ROAR_BASE_URL;
-  const baseUrl = config.baseUrl.trim() || (envKey ? envBaseUrl : '');
-  const apiKey = config.apiKey.trim() || envKey;
-  const usingEnvOnly = !config.baseUrl.trim() && !config.apiKey.trim() && Boolean(envKey);
+  const useRoar = config.useRoar ?? Boolean(envKey);
+
+  if (useRoar && envKey) {
+    return {
+      useRoar: true,
+      baseUrl: envBaseUrl,
+      apiKey: envKey,
+      mock: config.mock,
+    };
+  }
 
   return {
-    baseUrl,
-    apiKey,
-    mock: usingEnvOnly ? false : config.mock,
+    useRoar: false,
+    baseUrl: config.baseUrl.trim(),
+    apiKey: config.apiKey.trim(),
+    mock: config.mock,
   };
 }
 

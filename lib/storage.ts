@@ -2,10 +2,14 @@ import { deepMerge, type DeepPartial } from './types';
 
 export interface Settings {
   jev: {
+    /** Use the Roar AI gateway from .env instead of the custom fields below. */
+    useRoar: boolean;
     baseUrl: string;
     apiKey: string;
     /** Force deterministic mock responses even when a key is configured. */
     mock: boolean;
+    /** True once the user has explicitly toggled mock mode. */
+    mockExplicit: boolean;
   };
   sarvam: {
     baseUrl: string;
@@ -38,13 +42,16 @@ export interface Settings {
 }
 
 const roarBaseUrl = import.meta.env.ROAR_BASE_URL ?? '';
+const roarKey = import.meta.env.ROAR_API_KEY ?? '';
 
 export const DEFAULT_SETTINGS: Settings = {
   jev: {
     // The key itself stays in the background bundle; only the public URL is here.
+    useRoar: Boolean(roarKey),
     baseUrl: roarBaseUrl || (import.meta.env.WXT_JEV_BASE_URL ?? ''),
     apiKey: import.meta.env.WXT_JEV_API_KEY ?? '',
-    mock: !roarBaseUrl,
+    mock: !roarKey,
+    mockExplicit: false,
   },
   sarvam: {
     baseUrl: 'https://api.sarvam.ai/v2',
@@ -77,11 +84,23 @@ const SETTINGS_KEY = 'jev.settings.v1';
 export async function getSettings(): Promise<Settings> {
   const stored = await chrome.storage.local.get(SETTINGS_KEY);
   const raw = stored[SETTINGS_KEY] as DeepPartial<Settings> | undefined;
-  return raw ? deepMerge(structuredClone(DEFAULT_SETTINGS), raw) : structuredClone(DEFAULT_SETTINGS);
+  const merged = raw
+    ? deepMerge(structuredClone(DEFAULT_SETTINGS), raw)
+    : structuredClone(DEFAULT_SETTINGS);
+
+  // A Roar key in .env means live mode unless the user explicitly chose mock.
+  // This also migrates older settings that stored `mock: true` by default.
+  if (roarKey && merged.jev.useRoar && !merged.jev.mockExplicit) {
+    merged.jev.mock = false;
+  }
+
+  return merged;
 }
 
 export async function updateSettings(patch: DeepPartial<Settings>): Promise<Settings> {
   const next = deepMerge(await getSettings(), patch);
+  // Remember an explicit mock choice so the .env key does not override it.
+  if (patch.jev?.mock !== undefined) next.jev.mockExplicit = true;
   await chrome.storage.local.set({ [SETTINGS_KEY]: next });
   return next;
 }

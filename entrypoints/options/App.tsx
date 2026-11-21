@@ -422,12 +422,31 @@ export default function App() {
           title="AI provider"
           subtitle="OpenAI-compatible gateway. Mock mode uses deterministic local rules."
         />
+        <div className="row">
+          <div>
+            <h2>Use Roar AI gateway</h2>
+            <p className="muted small">
+              Read <code>ROAR_API_KEY</code> from <code>.env</code>. Turn off to use a custom
+              provider.
+            </p>
+          </div>
+          <label className="switch">
+            <input
+              type="checkbox"
+              aria-label="Use Roar AI gateway"
+              checked={draft.jev.useRoar}
+              onChange={(event) => setJev({ useRoar: event.target.checked })}
+            />
+            <span />
+          </label>
+        </div>
         <div className="field">
           <label htmlFor="jev-base">Base URL</label>
           <input
             id="jev-base"
             placeholder="https://api.roar-ai.com/v1"
             value={draft.jev.baseUrl}
+            disabled={draft.jev.useRoar}
             onChange={(event) => setJev({ baseUrl: event.target.value })}
           />
         </div>
@@ -438,19 +457,20 @@ export default function App() {
             type="password"
             placeholder="roar_…"
             value={draft.jev.apiKey}
+            disabled={draft.jev.useRoar}
             onChange={(event) => setJev({ apiKey: event.target.value })}
           />
         </div>
         <p className="muted small">
           Roar AI uses the <strong>jev</strong> evaluation model through the official OpenAI SDK.{' '}
-          {draft.jev.baseUrl.includes('roar-ai.com') && !draft.jev.apiKey ? (
+          {draft.jev.useRoar ? (
             <>
               Using <code>ROAR_API_KEY</code> from <code>.env</code>.
             </>
           ) : (
             <>
-              A <code>ROAR_API_KEY</code> in <code>.env</code> fills these defaults at build
-              time.
+              Add a <code>ROAR_API_KEY</code> to <code>.env</code> to use the gateway, or fill in
+              the fields above for a custom provider.
             </>
           )}
         </p>

@@ -66,13 +66,16 @@ Jev uses the **Roar AI gateway** by default through the official OpenAI SDK. The
    ```
    `.env` is gitignored. The key is read at build time and never committed.
 2. Optional overrides: `ROAR_BASE_URL` (default `https://api.roar-ai.com/v1`) and `ROAR_MODEL` (default `jev`).
-3. Rebuild the extension. The **AI provider** section shows the gateway URL and a masked key.
+3. Rebuild the extension. **Settings → AI provider → Use Roar AI gateway** is on by default when `ROAR_API_KEY` is present.
 4. Test the gateway from the terminal:
    ```bash
    npm run test:roar
    ```
+5. Test it from the extension: **Popup → Developer tools → Test AI**. The toast shows the provider, model, and a real score.
 
-- **Mock mode** — turn on to use local heuristics without calling the gateway.
+- **Use Roar AI gateway** — when on, the extension always uses `ROAR_API_KEY` and `ROAR_BASE_URL` from `.env`, even if older settings still contain a custom URL or key. Turn it off to use the custom fields below.
+- **Mock mode** — turn on to use local heuristics without calling the gateway. This is an explicit choice; a Roar key in `.env` no longer silently leaves mock mode on.
+- **Older installs** — if a previous version stored `mock: true` by default, the first load after this update flips it to live when a Roar key is present. Toggle **Mock mode** on and off if you want to override that.
 - **Sarvam fallback** — base URL, model, and key. Used only when the primary result is low confidence.
 - **Privacy** — accept the data-sharing notice before using the extension.
 
