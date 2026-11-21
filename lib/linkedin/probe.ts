@@ -10,6 +10,13 @@ export interface DomProbe {
   roles: string[];
   urnElements: Array<{ tag: string; className: string; urn: string; parent: string }>;
   feedContainer: { found: boolean; tag?: string; className?: string; children?: number };
+  listItems: Array<{
+    textLength: number;
+    hasCommentary: boolean;
+    anchors: string[];
+    childTags: string[];
+  }>;
+  activityLinks: string[];
 }
 
 const COUNT_SELECTORS = [
@@ -108,6 +115,28 @@ export function probeDom(): DomProbe {
       }
     : { found: false };
 
+  const feed = document.querySelector<HTMLElement>('[data-testid="mainFeed"]');
+  const listItems = feed
+    ? Array.from(feed.querySelectorAll<HTMLElement>('[role="listitem"]'))
+        .slice(0, 3)
+        .map((item) => ({
+          textLength: item.innerText.length,
+          hasCommentary: Boolean(item.querySelector('[data-testid="expandable-text-box"]')),
+          anchors: Array.from(item.querySelectorAll<HTMLAnchorElement>('a[href]'))
+            .slice(0, 5)
+            .map((anchor) => anchor.getAttribute('href') ?? ''),
+          childTags: Array.from(item.children)
+            .slice(0, 8)
+            .map((child) => child.tagName.toLowerCase()),
+        }))
+    : [];
+
+  const activityLinks = sample(
+    Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href*="urn:li:activity"]')).map(
+      (anchor) => anchor.getAttribute('href') ?? '',
+    ),
+  );
+
   return {
     url: location.href,
     title: document.title,
@@ -120,5 +149,7 @@ export function probeDom(): DomProbe {
     roles,
     urnElements,
     feedContainer,
+    listItems,
+    activityLinks,
   };
 }
