@@ -16,28 +16,27 @@ if (!apiKey) {
 const client = new OpenAI({
   apiKey,
   baseURL: process.env.ROAR_BASE_URL ?? 'https://api.roar-ai.com/v1',
+  maxRetries: 0,
 });
 
-const completion = await client.chat.completions.create({
-  model: process.env.ROAR_MODEL ?? 'llama-3.3-70b',
-  messages: [
-    {
-      role: 'system',
-      content: 'You are a concise assistant. Follow the user instruction exactly.',
+// `jev` is an evaluation model, so it is called through /v1/evaluate rather
+// than /v1/chat/completions. See https://roar-ai.com/docs/evaluate.
+const response = await client.post('/evaluate', {
+  body: {
+    model: process.env.ROAR_MODEL ?? 'jev',
+    state: 'The user asks: what is 17 * 23? The answer given is 391.',
+    questions: {
+      correct: {
+        type: 'boolean',
+        instructions: 'Is the answer arithmetically correct?',
+      },
+      confidence: {
+        type: 'score',
+        instructions: 'How confident are you in that judgement?',
+        criteria: ['guessing', 'unsure', 'fairly sure', 'certain'],
+      },
     },
-    {
-      role: 'user',
-      content: 'What is 17 * 23? Reply with only the number.',
-    },
-  ],
-  temperature: 0,
+  },
 });
 
-const reply = completion.choices?.[0]?.message?.content;
-if (!reply) {
-  console.error('The gateway returned no message content.');
-  console.error(JSON.stringify(completion, null, 2));
-  process.exit(1);
-}
-
-console.log(reply.trim());
+console.log(JSON.stringify(response.answers, null, 2));

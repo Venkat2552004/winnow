@@ -442,7 +442,7 @@ export default function App() {
           />
         </div>
         <p className="muted small">
-          Roar AI uses <strong>llama-3.3-70b</strong> through the official OpenAI SDK.{' '}
+          Roar AI uses the <strong>jev</strong> evaluation model through the official OpenAI SDK.{' '}
           {draft.jev.baseUrl.includes('roar-ai.com') && !draft.jev.apiKey ? (
             <>
               Using <code>ROAR_API_KEY</code> from <code>.env</code>.

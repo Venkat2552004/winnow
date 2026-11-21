@@ -58,14 +58,14 @@ Open the extension's **Settings** page.
 
 ### AI
 
-Jev uses the **Roar AI gateway** by default. It is OpenAI-compatible, so Jev uses the official OpenAI SDK.
+Jev uses the **Roar AI gateway** by default through the official OpenAI SDK. The `jev` model is an **evaluation** model, so Jev calls `POST /v1/evaluate` with typed questions instead of chat completions.
 
 1. Add your key to `.env`:
    ```
    ROAR_API_KEY=...
    ```
    `.env` is gitignored. The key is read at build time and never committed.
-2. Optional overrides: `ROAR_BASE_URL` (default `https://api.roar-ai.com/v1`) and `ROAR_MODEL` (default `llama-3.3-70b`).
+2. Optional overrides: `ROAR_BASE_URL` (default `https://api.roar-ai.com/v1`) and `ROAR_MODEL` (default `jev`).
 3. Rebuild the extension. The **AI provider** section shows the gateway URL and a masked key.
 4. Test the gateway from the terminal:
    ```bash
@@ -127,7 +127,7 @@ Scroll the feed. Posts scoring below the threshold are blurred behind a reveal c
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` | Production build into `.output/chrome-mv3` |
 | `npm run compile` | Type-check only |
-| `npm run test:roar` | Send one chat request to the Roar AI gateway |
+| `npm run test:roar` | Send one evaluation request to the `jev` model |
 | `npm run zip` | Package for distribution |
 
 ## Layout
