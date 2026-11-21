@@ -8,7 +8,7 @@ export default defineConfig({
     permissions: ['storage', 'identity'],
     host_permissions: [
       'https://mail.google.com/*',
-      'https://www.linkedin.com/*',
+      'https://*.linkedin.com/*',
       'https://www.googleapis.com/*',
     ],
     optional_host_permissions: ['https://*/*'],

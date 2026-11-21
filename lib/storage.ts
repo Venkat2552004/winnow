@@ -25,6 +25,8 @@ export interface Settings {
     /** Posts scoring below this are blurred. */
     threshold: number;
     paused: boolean;
+    /** Show an on-page diagnostic pill and verbose logs. */
+    debug: boolean;
   };
   consent: {
     dataSharingAccepted: boolean;
@@ -56,6 +58,7 @@ export const DEFAULT_SETTINGS: Settings = {
     enabled: true,
     threshold: 35,
     paused: false,
+    debug: false,
   },
   consent: {
     dataSharingAccepted: false,

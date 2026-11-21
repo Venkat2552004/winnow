@@ -291,6 +291,22 @@ export default function App() {
             <span />
           </label>
         </div>
+        <div className="row">
+          <div>
+            <h2>Debug overlay</h2>
+            <p className="muted small">
+              Show a live diagnostic pill on LinkedIn and log scoring details to the console.
+            </p>
+          </div>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={draft.linkedin.debug}
+              onChange={(event) => setLinkedin({ debug: event.target.checked })}
+            />
+            <span />
+          </label>
+        </div>
       </section>
 
       <section className="card section">

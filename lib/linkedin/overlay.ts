@@ -101,6 +101,22 @@ const STYLES = `
   border: 1px solid rgba(255, 255, 255, 0.12);
   pointer-events: none;
 }
+
+.jev-debug-pill {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(14, 17, 22, 0.92);
+  border: 1px solid rgba(91, 140, 255, 0.4);
+  color: #e6edf6;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+}
 `;
 
 export function injectStyles(): void {

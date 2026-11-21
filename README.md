@@ -82,3 +82,21 @@ lib/
 ## Privacy
 
 Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the Jev API, and to Sarvam when the fallback is used. Full email bodies are never sent. No analytics, no telemetry.
+
+## Troubleshooting LinkedIn
+
+If posts aren't blurring:
+
+1. **Rebuild and reload.** Content scripts don't hot-swap into tabs that are already open.
+   ```bash
+   npm run build
+   ```
+   Then `chrome://extensions` → reload Jev → reload the LinkedIn tab.
+2. **Turn on the debug overlay.** Settings → LinkedIn → *Debug overlay*. A pill appears bottom-right showing `posts · scored · blurred · revealed`.
+3. **Open the popup → Diagnose.** It reports how many post roots were found and the last error.
+4. **Open the popup → Test blur.** This blurs the first post with a fake score.
+   - Test blur works, real scoring doesn't → extraction or API issue.
+   - Test blur fails → the page selectors need updating (`lib/linkedin/dom.ts`).
+5. **Check the console** for `[jev]` logs (enable debug first).
+
+Leave **Mock mode** on until the Jev API is live. Sarvam is still used for posts the local heuristics can't confidently judge.

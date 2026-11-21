@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react';
+import {
+  DIAGNOSE_MESSAGE,
+  TEST_BLUR_MESSAGE,
+  type LinkedInDiagnostics,
+  type TestBlurResult,
+} from '../../lib/linkedin/diagnostics';
 import { sendMessage } from '../../lib/messaging';
 import { getTodayStats, type DayStats } from '../../lib/stats';
 import { getSettings, onSettingsChanged, updateSettings, type Settings } from '../../lib/storage';
@@ -9,6 +15,8 @@ type Toast = { kind: 'ok' | 'err'; text: string };
 export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [stats, setStats] = useState<DayStats | null>(null);
+  const [diag, setDiag] = useState<LinkedInDiagnostics | null>(null);
+  const [diagError, setDiagError] = useState<string | null>(null);
   const [mode, setMode] = useState<'mock' | 'live'>('mock');
   const [version, setVersion] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
@@ -46,6 +54,44 @@ export default function App() {
       setToast({ kind: 'ok', text: 'Cache cleared' });
     } catch (error) {
       setToast({ kind: 'err', text: errorMessage(error) });
+    }
+  }
+
+  async function diagnose(): Promise<void> {
+    setDiag(null);
+    setDiagError(null);
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) throw new Error('No active tab');
+      if (tab.url && !tab.url.includes('linkedin.com')) {
+        throw new Error('Open a LinkedIn tab first');
+      }
+      const result = (await chrome.tabs.sendMessage(tab.id, {
+        type: DIAGNOSE_MESSAGE,
+      })) as LinkedInDiagnostics | undefined;
+      if (!result) throw new Error('No response — reload the LinkedIn tab');
+      setDiag(result);
+    } catch (error) {
+      setDiagError(
+        `${errorMessage(error)}. If this persists, reload the extension and the LinkedIn tab.`,
+      );
+    }
+  }
+
+  async function testBlur(): Promise<void> {
+    setDiag(null);
+    setDiagError(null);
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) throw new Error('No active tab');
+      const result = (await chrome.tabs.sendMessage(tab.id, {
+        type: TEST_BLUR_MESSAGE,
+      })) as TestBlurResult | undefined;
+      if (!result) throw new Error('No response — reload the LinkedIn tab');
+      if (!result.ok) throw new Error(result.error ?? 'Test blur failed');
+      setToast({ kind: 'ok', text: `Test blur applied to ${result.urn}` });
+    } catch (error) {
+      setDiagError(errorMessage(error));
     }
   }
 
@@ -160,6 +206,34 @@ export default function App() {
           <p className="small muted">
             Today: {stats.scored} scored · {stats.blurred} blurred · {stats.revealed} revealed
           </p>
+        )}
+
+        <div className="row" style={{ gap: 8 }}>
+          <button className="btn" style={{ flex: 1 }} onClick={() => void diagnose()}>
+            Diagnose
+          </button>
+          <button className="btn" style={{ flex: 1 }} onClick={() => void testBlur()}>
+            Test blur
+          </button>
+        </div>
+
+        {diagError && <div className="toast err">{diagError}</div>}
+
+        {diag && (
+          <div className="toast ok" style={{ display: 'grid', gap: 2 }}>
+            <span>
+              Active: {String(diag.active)} · posts found: {diag.roots}
+            </span>
+            <span>
+              Scored: {diag.scored} · blurred: {diag.blurred} · revealed: {diag.revealed}
+            </span>
+            {diag.sample && (
+              <span>
+                Sample: {diag.sample.textLength} chars by {diag.sample.author}
+              </span>
+            )}
+            {diag.lastError && <span>Error: {diag.lastError}</span>}
+          </div>
         )}
       </div>
 
