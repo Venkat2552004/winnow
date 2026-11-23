@@ -2,9 +2,10 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { heuristicEmailClassification } from '../lib/gmail/heuristics';
+import { decidePost } from '../lib/linkedin/decision';
 import { heuristicPostScore } from '../lib/linkedin/heuristics';
-import type { PostType } from '../lib/linkedin/taxonomy';
-import type { EmailCategory } from '../lib/winnow/types';
+import { LINKEDIN_PRESETS, type PostType } from '../lib/linkedin/taxonomy';
+import type { EmailCategory, PostScore } from '../lib/winnow/types';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -32,10 +33,15 @@ interface PostFixture {
   likes: number;
   comments: number;
   expectedType: PostType | 'skip';
+  /** Expected keep/blur decision under the Balanced preset (threshold 35). */
   expectedKeepAt35: boolean;
   requiresAI?: boolean;
   notes?: string;
 }
+
+/** The Balanced preset reproduces the original threshold-only baseline. */
+const BALANCED = LINKEDIN_PRESETS.find((preset) => preset.id === 'balanced');
+if (!BALANCED) throw new Error('Balanced preset is missing');
 
 function readJsonl<T>(file: string): T[] {
   return readFileSync(file, 'utf8')
@@ -121,11 +127,22 @@ const postResults = postFixtures.map((fixture) => {
     comments: fixture.comments,
   });
   const predictedType = result?.labels[0] ?? 'other';
-  const predictedKeep = (result?.score ?? 50) >= 35;
+  // Falls back to a neutral score when no heuristic matched, matching the
+  // pre-existing behavior for posts the heuristics decline to judge.
+  const scoreForDecision: PostScore = result ?? {
+    score: 50,
+    confidence: 0,
+    labels: ['other'],
+    reason: 'no heuristic match',
+    source: 'heuristic',
+  };
+  const decision = decidePost(scoreForDecision, BALANCED);
+  const predictedKeep = !decision.blur;
   return {
     fixture,
     predictedType,
     predictedKeep,
+    cause: result ? decision.cause : null,
     correctType: predictedType === fixture.expectedType,
     correctKeep: predictedKeep === fixture.expectedKeepAt35,
     skipped: fixture.expectedType === 'skip' || Boolean(fixture.requiresAI),
@@ -143,6 +160,8 @@ const falsePositive = postEvaluated.filter(
 const falseNegative = postEvaluated.filter(
   (result) => !result.fixture.expectedKeepAt35 && result.predictedKeep,
 ).length;
+const blurByCategory = postEvaluated.filter((result) => result.cause === 'category').length;
+const blurByScore = postEvaluated.filter((result) => result.cause === 'score').length;
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -165,6 +184,8 @@ const report = {
     keepAccuracy,
     falsePositive,
     falseNegative,
+    blurByCategory,
+    blurByScore,
   },
   failures: {
     email: emailEvaluated
@@ -183,6 +204,7 @@ const report = {
         predictedType: result.predictedType,
         expectedKeep: result.fixture.expectedKeepAt35,
         predictedKeep: result.predictedKeep,
+        cause: result.cause,
         notes: result.fixture.notes,
       })),
   },
@@ -209,7 +231,7 @@ const emailFailures = report.failures.email
 const postFailures = report.failures.posts
   .map(
     (failure) =>
-      `- \`${failure.id}\`: expected **${failure.expectedType}** / keep=${failure.expectedKeep}, got **${failure.predictedType}** / keep=${failure.predictedKeep}${failure.notes ? ` — ${failure.notes}` : ''}`,
+      `- \`${failure.id}\`: expected **${failure.expectedType}** / keep=${failure.expectedKeep}, got **${failure.predictedType}** / keep=${failure.predictedKeep}${failure.cause ? ` (${failure.cause})` : ''}${failure.notes ? ` — ${failure.notes}` : ''}`,
   )
   .join('\n');
 
@@ -234,6 +256,7 @@ ${emailRows}
 - Keep/blur accuracy: **${percent(keepAccuracy)}** (${keepCorrect}/${postEvaluated.length})
 - False positives (valuable blurred): **${falsePositive}**
 - False negatives (low-value kept): **${falseNegative}**
+- Blurred by category override: **${blurByCategory}** · blurred by score: **${blurByScore}**
 
 ## Failures
 

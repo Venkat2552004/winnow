@@ -8,6 +8,7 @@ import {
   type LinkedInDiagnostics,
   type TestBlurResult,
 } from '../../lib/linkedin/diagnostics';
+import { decidePost } from '../../lib/linkedin/decision';
 import { extractPost, findPostRoots, getUrn } from '../../lib/linkedin/dom';
 import { probeDom } from '../../lib/linkedin/probe';
 import {
@@ -100,7 +101,8 @@ export default defineContentScript({
     function applyDecision(element: HTMLElement, score: PostScore): void {
       if (!settings || revealed.has(element)) return;
 
-      if (score.score < settings.linkedin.threshold) {
+      const decision = decidePost(score, settings.linkedin);
+      if (decision.blur) {
         const added = blurPost(
           element,
           score,
@@ -111,6 +113,7 @@ export default defineContentScript({
             renderPill();
           },
           getUrn(element) ?? 'jev-post',
+          decision.cause,
         );
         if (added && !countedBlur.has(element)) {
           countedBlur.add(element);

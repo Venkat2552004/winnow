@@ -8,6 +8,13 @@ import type {
   UnsubscribeSender,
 } from '../../lib/gmail/types';
 import {
+  LINKEDIN_PRESETS,
+  POST_TYPES,
+  POST_TYPE_LABEL,
+  type LinkedInPresetId,
+  type PostType,
+} from '../../lib/linkedin/taxonomy';
+import {
   ALL_CATEGORIES,
   CATEGORY_GROUP,
   CATEGORY_GROUP_LABEL,
@@ -138,6 +145,53 @@ export default function App() {
       return {
         ...prev,
         gmail: { ...prev.gmail, cleanupCategories, labelPreset: 'custom' },
+      };
+    });
+  }
+
+  function applyLinkedInPreset(id: LinkedInPresetId): void {
+    const preset = LINKEDIN_PRESETS.find((item) => item.id === id);
+    if (!preset) return;
+    setLinkedin({
+      preset: preset.id,
+      blurCategories: [...preset.blurCategories],
+      keepCategories: [...preset.keepCategories],
+      threshold: preset.threshold,
+    });
+  }
+
+  function toggleBlurType(type: PostType): void {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const enabled = prev.linkedin.blurCategories.includes(type);
+      return {
+        ...prev,
+        linkedin: {
+          ...prev.linkedin,
+          preset: 'custom',
+          blurCategories: enabled
+            ? prev.linkedin.blurCategories.filter((item) => item !== type)
+            : [...prev.linkedin.blurCategories, type],
+          keepCategories: prev.linkedin.keepCategories.filter((item) => item !== type),
+        },
+      };
+    });
+  }
+
+  function toggleKeepType(type: PostType): void {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const enabled = prev.linkedin.keepCategories.includes(type);
+      return {
+        ...prev,
+        linkedin: {
+          ...prev.linkedin,
+          preset: 'custom',
+          keepCategories: enabled
+            ? prev.linkedin.keepCategories.filter((item) => item !== type)
+            : [...prev.linkedin.keepCategories, type],
+          blurCategories: prev.linkedin.blurCategories.filter((item) => item !== type),
+        },
       };
     });
   }
@@ -1101,9 +1155,90 @@ export default function App() {
             <span />
           </label>
         </div>
+        <div className="preset-grid">
+          {LINKEDIN_PRESETS.map((preset) => {
+            const selected = draft.linkedin.preset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                className={`preset-card${selected ? ' preset-card--active' : ''}`}
+                onClick={() => applyLinkedInPreset(preset.id)}
+              >
+                <span className="preset-card__name">{preset.name}</span>
+                <span className="preset-card__desc">{preset.description}</span>
+                <span className="preset-card__meta">
+                  {preset.blurCategories.length} blur · {preset.keepCategories.length} keep ·
+                  score {preset.threshold}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {draft.linkedin.preset === 'custom' && (
+          <p className="small muted">
+            Custom selection — a type in both lists is never blurred.
+          </p>
+        )}
+
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="row">
+            <span className="small muted">Always blur</span>
+            <span className="small muted">
+              {draft.linkedin.blurCategories.length}/{POST_TYPES.length}
+            </span>
+          </div>
+          <div className="label-grid">
+            {POST_TYPES.map((type) => {
+              const checked = draft.linkedin.blurCategories.includes(type);
+              return (
+                <label
+                  key={type}
+                  className={`label-chip${checked ? ' label-chip--on' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleBlurType(type)}
+                  />
+                  <span>{POST_TYPE_LABEL[type]}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="row">
+            <span className="small muted">Always keep</span>
+            <span className="small muted">
+              {draft.linkedin.keepCategories.length}/{POST_TYPES.length}
+            </span>
+          </div>
+          <div className="label-grid">
+            {POST_TYPES.map((type) => {
+              const checked = draft.linkedin.keepCategories.includes(type);
+              return (
+                <label
+                  key={type}
+                  className={`label-chip${checked ? ' label-chip--on' : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleKeepType(type)}
+                  />
+                  <span>{POST_TYPE_LABEL[type]}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="field">
           <div className="row">
-            <label htmlFor="li-threshold">Blur below</label>
+            <label htmlFor="li-threshold">Blur below (types in neither list)</label>
             <span className="small muted">{draft.linkedin.threshold}/100</span>
           </div>
           <input
@@ -1115,17 +1250,14 @@ export default function App() {
             value={draft.linkedin.threshold}
             onChange={(event) => setLinkedin({ threshold: Number(event.target.value) })}
           />
-        </div>
-        <div className="stack" style={{ gap: 4 }}>
           <p className="small muted">
-            <strong>Keeps:</strong> job postings and referrals, technical breakdowns, actionable
-            advice, self-improvement, resources, industry insight, case studies, personal lessons
-            with a takeaway, and substantive discussion.
-          </p>
-          <p className="small muted">
-            <strong>Blurs:</strong> ads, achievements without a lesson, generic stories,
-            engagement bait, memes and funny videos, off-topic politics/sports/entertainment, and
-            low-effort posts. Hashtags are common on LinkedIn and are not penalized by themselves.
+            {
+              POST_TYPES.length -
+                draft.linkedin.blurCategories.length -
+                draft.linkedin.keepCategories.length
+            }{' '}
+            post types use the score. Hashtags are not penalized by themselves, and media-only
+            posts are left visible.
           </p>
         </div>
         <div className="row">

@@ -151,6 +151,75 @@ export const LOW_VALUE_POST_TYPES: readonly PostType[] = [
   'low_effort',
 ];
 
+export type LinkedInPresetId = 'balanced' | 'focus' | 'chill' | 'custom';
+
+export interface LinkedInPreset {
+  id: Exclude<LinkedInPresetId, 'custom'>;
+  name: string;
+  description: string;
+  blurCategories: readonly PostType[];
+  keepCategories: readonly PostType[];
+  threshold: number;
+}
+
+/**
+ * Presets seed the always-blur and always-keep lists. A type in neither list
+ * falls back to the score threshold. Lists within a preset never overlap.
+ */
+export const LINKEDIN_PRESETS: readonly LinkedInPreset[] = [
+  {
+    id: 'balanced',
+    name: 'Balanced',
+    description: 'Blur ads, bait, memes, off-topic, and low-effort posts.',
+    blurCategories: LOW_VALUE_POST_TYPES,
+    keepCategories: VALUE_POST_TYPES,
+    threshold: 35,
+  },
+  {
+    id: 'focus',
+    name: 'Focus',
+    description: 'Also blur personal lessons, discussion, and uncategorized posts.',
+    blurCategories: [
+      ...LOW_VALUE_POST_TYPES,
+      'personal_lesson',
+      'substantive_discussion',
+      'other',
+    ],
+    keepCategories: [
+      'job_opportunity',
+      'technical_breakdown',
+      'actionable_advice',
+      'self_improvement',
+      'resource',
+      'industry_insight',
+      'case_study',
+    ],
+    threshold: 45,
+  },
+  {
+    id: 'chill',
+    name: 'Chill',
+    description: 'Only blur ads, bait, low-effort, and off-topic posts.',
+    blurCategories: ['advertisement', 'engagement_bait', 'low_effort', 'off_topic'],
+    keepCategories: [
+      'job_opportunity',
+      'technical_breakdown',
+      'actionable_advice',
+      'self_improvement',
+      'resource',
+      'industry_insight',
+      'case_study',
+      'personal_lesson',
+      'substantive_discussion',
+      'achievement',
+      'generic_story',
+      'humor_meme',
+      'other',
+    ],
+    threshold: 20,
+  },
+];
+
 export function isPostType(value: unknown): value is PostType {
   return typeof value === 'string' && value in POST_TYPE_BASE;
 }
