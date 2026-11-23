@@ -20,28 +20,30 @@ Pick 4–6 and fill in the measured numbers after running the eval plan in `docs
 - Designed a 16-category email taxonomy and five user presets, with priority floors, protected categories, idempotent label application, and cleanup safeguards for important and starred mail.
 - Designed a 17-type LinkedIn post taxonomy and value-based scoring model that keeps jobs, technical breakdowns, actionable advice, self-improvement, and resources while blurring ads, engagement bait, memes, off-topic posts, and low-effort content.
 - Built a provider-routing pipeline with Roar AI as the primary classifier, Sarvam as a low-confidence fallback, deterministic local heuristics, mock mode, retries, and IndexedDB caching.
-- Hardened OAuth token refresh, Gmail rate-limit handling, cache versioning, label migration, and service-worker restarts; achieved `<X>%` successful runs and 0 data-loss incidents in testing.
-- Designed a multi-layer evaluation strategy covering unit, contract, integration, E2E, AI quality, performance, security, and accessibility, with golden datasets, regression gates, and a risk register.
-- Improved email classification macro-F1 from `<X>` to `<Y>` and important-category recall to `<Z>%` on a `<N>`-message golden set.
-- Reduced LinkedIn false-positive blur rate from `<X>%` to `<Y>%` and p95 scoring latency from `<A> ms` to `<B> ms` through taxonomy tuning, heuristic pre-filtering, caching, and concurrency control.
-- Reduced cost per 1,000 classifications by `<X>%` by routing clear-cut cases through local heuristics and caching repeat results.
+- Hardened OAuth token refresh, Gmail rate-limit handling, cache versioning, label migration, and service-worker restarts; added a risk register and test matrix for the highest-risk failure modes.
+- Built a starter Vitest suite of **85 tests across 12 files** and a golden-fixture eval harness; achieved **100% heuristic accuracy on 23 curated email fixtures** and **22 curated LinkedIn fixtures** (starter baseline).
+- Added a CI quality gate for type-check, unit/integration tests, coverage, heuristic eval, production build, Playwright E2E, and secret scanning.
+- Reached **50.5% line coverage** in the starter suite, with **94%+ on LinkedIn heuristics** and **96%+ on cleanup/labels**; the plan targets 80%+ on pure logic.
+- Achieved **0 false positives and 0 false negatives** on the 22-post starter fixture set at the default threshold of 35.
 
 ---
 
 ## Metrics to fill in
 
-| Metric | Before | After | How measured |
+| Metric | Starter baseline | Target / next step | How measured |
 |---|---|---|---|
-| Email macro-F1 | `<X>` | `<Y>` | Golden email set |
-| Important-category recall | `<X>%` | `<Y>%` | Golden email set |
-| LinkedIn keep/blur accuracy | `<X>%` | `<Y>%` | Golden post set |
-| False-positive blur rate | `<X>%` | `<Y>%` | Golden post set |
-| p95 LinkedIn scoring latency | `<X> ms` | `<Y> ms` | Performance test |
-| Gmail preview (200 messages) | `<X> s` | `<Y> s` | Performance test |
-| Cache hit rate | `<X>%` | `<Y>%` | Instrumented run |
-| Cost per 1,000 classifications | `$<X>` | `$<Y>` | Provider usage |
-| Test coverage | `<X>%` | `<Y>%` | Vitest |
-| Critical accessibility violations | `<X>` | `0` | axe-core |
+| Email macro-F1 | **1.000** (23 curated fixtures) | Expand to 300+ fixtures | Golden email set |
+| Important-category recall | **100%** (starter fixtures) | Keep ≥ 98% on expanded set | Golden email set |
+| LinkedIn keep/blur accuracy | **100%** (22 curated fixtures) | Expand to 300+ fixtures | Golden post set |
+| False-positive blur rate | **0%** (starter fixtures) | Keep ≤ 5% on expanded set | Golden post set |
+| p95 LinkedIn scoring latency | Not measured | ≤ 2.5 s | Performance test |
+| Gmail preview (200 messages) | Not measured | ≤ 60 s cold / ≤ 20 s warm | Performance test |
+| Cache hit rate | Not measured | ≥ 50% on repeat scroll | Instrumented run |
+| Cost per 1,000 classifications | Not measured | Set provider budget | Provider usage |
+| Test coverage | **50.5% lines** (starter) | 80%+ on pure logic | Vitest |
+| Critical accessibility violations | Not measured | 0 | axe-core |
+
+> The starter fixture numbers are small and curated to the heuristics. Do not present them as general accuracy. Expand the datasets and run the AI eval before quoting them externally.
 
 ---
 

@@ -161,8 +161,24 @@ Media-only posts with no commentary are left visible because Winnow cannot judge
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` | Production build into `.output/chrome-mv3` |
 | `npm run compile` | Type-check only |
+| `npm test` | Vitest unit/integration suite |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run test:coverage` | Vitest with coverage |
+| `npm run test:e2e` | Playwright extension smoke test (builds first) |
+| `npm run eval:heuristics` | Golden-fixture heuristic eval |
 | `npm run test:roar` | Send one evaluation request to the `jev` model |
 | `npm run zip` | Package for distribution |
+
+## Testing
+
+```bash
+npm test                 # unit + integration
+npm run test:coverage    # coverage report
+npm run eval:heuristics  # golden fixtures, writes evals/reports/
+npm run test:e2e         # Playwright extension smoke test
+```
+
+The E2E test loads the built extension in Chromium and checks the popup. On Linux CI it runs under `xvfb-run`. The eval fixtures live in `evals/fixtures/`; see [`evals/README.md`](evals/README.md) for the schema. CI runs type-check, tests, eval, build, E2E, and a secret scan.
 
 ## Layout
 

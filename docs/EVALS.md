@@ -9,8 +9,13 @@
 ## 0. Current baseline (informal)
 
 - Live Roar smoke test: 9/9 representative LinkedIn posts classified into the expected type (job, technical breakdown, advice, ad, achievement, generic story, off-topic, humor, hashtag-only).
+- Starter Vitest suite: **85 tests across 12 files**, all passing.
+- Starter heuristic eval on curated fixtures:
+  - Email: **100% accuracy (23/23)**, **macro-F1 1.000**.
+  - LinkedIn: **100% type accuracy (22/22)**, **100% keep/blur accuracy (22/22)**, 0 false positives, 0 false negatives.
 - Type-check and production build pass.
-- No automated unit/integration/E2E suite yet; the plan below is the gap.
+- Playwright extension smoke test and CI workflow added.
+- Caveat: the starter fixtures are small and curated to the heuristics. These numbers are a baseline, not a general accuracy claim. Expand the fixtures and run the AI eval before quoting them externally.
 
 ---
 

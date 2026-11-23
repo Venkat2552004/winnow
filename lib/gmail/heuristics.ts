@@ -36,15 +36,6 @@ const RULES: Rule[] = [
       ) && /(statement|summary|e-statement)/.test(haystack(i)),
   },
   {
-    category: 'invoice',
-    confidence: 0.88,
-    reason: 'Invoice or payment-due language',
-    test: (i) =>
-      /(invoice|payment due|amount due|bill is ready|pay your|autopay|billing statement)/.test(
-        haystack(i),
-      ),
-  },
-  {
     category: 'travel',
     confidence: 0.88,
     reason: 'Booking, itinerary, or reservation language',
@@ -54,11 +45,20 @@ const RULES: Rule[] = [
       ),
   },
   {
+    category: 'invoice',
+    confidence: 0.88,
+    reason: 'Invoice or payment-due language',
+    test: (i) =>
+      /(invoice|payment due|amount due|bill is ready|pay your|autopay|billing statement)/.test(
+        haystack(i),
+      ),
+  },
+  {
     category: 'legal',
     confidence: 0.8,
     reason: 'Contract, insurance, or government correspondence',
     test: (i) =>
-      /(contract|terms of service|policy update|insurance|tax return|irs|hmrc|legal notice|agreement)/.test(
+      /(terms of service|policy update|insurance|tax return|irs|hmrc|legal notice|agreement)/.test(
         haystack(i),
       ),
   },

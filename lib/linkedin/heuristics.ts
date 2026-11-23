@@ -61,7 +61,7 @@ const JOB_PATTERN =
 const ADVICE_PATTERN =
   /(how to|here(?:'| i)?s how|steps?|checklist|framework|template|tips?|mistakes?|lessons?|do this|try this|avoid|improve|better way|guide|playbook|advice|recommend)/;
 const RESOURCE_PATTERN =
-  /(free|template|guide|tool|resource|dataset|course|book|newsletter|download|cheat sheet|repo|github|open source|documentation|tutorial|curated|list of|collection)/;
+  /(free|template|guide|tool|resource|dataset|course|newsletter|download|cheat sheet|repo|github|open source|documentation|tutorial|curated|list of|collection)/;
 const SELF_IMPROVEMENT_PATTERN =
   /(career|productivity|leadership|habit|focus|time management|growth|learning|skills?|mindset|confidence|communication|networking|interview|promotion|salary|negotiat)/;
 const INDUSTRY_PATTERN =
@@ -74,7 +74,7 @@ const DISCUSSION_PATTERN =
   /(what do you think|how do you|what would you|discussion|debate|question for|curious|your experience|share your)/;
 
 const AD_PATTERN =
-  /(buy now|sign up|register now|limited time|discount|special offer|limited offer|exclusive offer|demo|book a call|our product|launch(?:ing)?|webinar|free trial|shop now|on sale|sale ends|flash sale|promo|sponsored)/;
+  /(buy now|sign up|register now|limited time|discount|special offer|limited offer|exclusive offer|\bdemo\b|book a call|our product|launch(?:ing)?|webinar|free trial|shop now|on sale|sale ends|flash sale|\bpromo\b|sponsored)/;
 const ACHIEVEMENT_PATTERN =
   /(promoted|promotion|award|honou?red|humbled|thrilled to announce|excited to share|proud to|certified|certification|graduated|work anniversary|milestone|new role|starting a new position|joined .* as)/;
 const GENERIC_STORY_PATTERN =

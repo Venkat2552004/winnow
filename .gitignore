@@ -8,3 +8,7 @@ stats.html
 *.log
 .DS_Store
 .venv
+coverage
+test-results
+playwright-report
+evals/reports
