@@ -1,4 +1,4 @@
-import type { PostInput, PostScore } from '../jev/types';
+import type { PostInput, PostScore } from '../winnow/types';
 import { clamp } from '../types';
 import type { PostType } from './taxonomy';
 

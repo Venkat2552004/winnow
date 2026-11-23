@@ -1,4 +1,4 @@
-import { ALL_CATEGORIES, type EmailCategory } from '../jev/types';
+import { ALL_CATEGORIES, type EmailCategory } from '../winnow/types';
 import { POST_TYPES, POST_TYPE_DESCRIPTION } from '../linkedin/taxonomy';
 
 /** Shared prompts and JSON parsing for OpenAI-compatible chat models. */

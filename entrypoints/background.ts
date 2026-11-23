@@ -19,7 +19,7 @@ import {
 import { scanUnsubscribes } from '../lib/gmail/senders';
 import { performUnsubscribe } from '../lib/gmail/unsubscribe';
 import type { Envelope, Handlers, Request } from '../lib/messaging';
-import { createJevClient, resolveJevConfig } from '../lib/jev/client';
+import { createJevClient, resolveJevConfig } from '../lib/winnow/client';
 import { classifyEmail, scorePost } from '../lib/pipeline';
 import { TaskQueue } from '../lib/queue';
 import { isRoarBaseUrl, ROAR_MODEL } from '../lib/roar/config';

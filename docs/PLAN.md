@@ -50,8 +50,8 @@ jev/
 │   ├── gmail.content/             # content script + Winnow panel on mail.google.com
 │   └── linkedin.content/          # content script + blur overlay on linkedin.com
 ├── lib/
-│   ├── jev/client.ts              # typed AI client (real + mock)
-│   ├── jev/types.ts               # request/response contracts
+│   ├── winnow/client.ts           # typed AI client (real + mock)
+│   ├── winnow/types.ts            # request/response contracts
 │   ├── llm/sarvam.ts              # fallback client (OpenAI-compatible)
 │   ├── gmail/auth.ts              # OAuth flow, token cache, silent re-auth
 │   ├── gmail/api.ts               # Gmail REST wrapper (list/get/batchModify/labels)

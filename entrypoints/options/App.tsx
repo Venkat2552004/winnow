@@ -18,7 +18,7 @@ import {
   type CategoryGroup,
   type EmailCategory,
   type EmailLabelPresetId,
-} from '../../lib/jev/types';
+} from '../../lib/winnow/types';
 import { sendMessage } from '../../lib/messaging';
 import { getSettings, updateSettings, type Settings } from '../../lib/storage';
 import { errorMessage } from '../../lib/types';

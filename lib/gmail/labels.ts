@@ -1,4 +1,4 @@
-import { gmailLabelFor, priorityLabelFor } from '../jev/types';
+import { gmailLabelFor, priorityLabelFor } from '../winnow/types';
 import type { Settings } from '../storage';
 import { createLabel, listLabels } from './api';
 

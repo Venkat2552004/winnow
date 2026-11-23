@@ -1,5 +1,5 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import type { PostScore } from '../../lib/jev/types';
+import type { PostScore } from '../../lib/winnow/types';
 import {
   DIAGNOSE_MESSAGE,
   PROBE_MESSAGE,

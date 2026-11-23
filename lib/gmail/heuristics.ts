@@ -1,4 +1,4 @@
-import type { EmailCategory, EmailClassification, EmailInput } from '../jev/types';
+import type { EmailCategory, EmailClassification, EmailInput } from '../winnow/types';
 
 interface Rule {
   category: EmailCategory;

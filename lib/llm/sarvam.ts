@@ -10,7 +10,7 @@ import {
   type EmailInput,
   type PostInput,
   type PostScore,
-} from '../jev/types';
+} from '../winnow/types';
 import { normalizePostLabels } from '../linkedin/taxonomy';
 
 export interface SarvamConfig {

@@ -9,7 +9,7 @@ import type {
   UnsubscribeResult,
   UnsubscribeSender,
 } from './gmail/types';
-import type { EmailClassification, EmailInput, PostInput, PostScore } from './jev/types';
+import type { EmailClassification, EmailInput, PostInput, PostScore } from './winnow/types';
 import type { Settings } from './storage';
 import type { DeepPartial } from './types';
 

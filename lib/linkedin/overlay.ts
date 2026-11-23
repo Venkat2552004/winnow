@@ -1,4 +1,4 @@
-import type { PostScore } from '../jev/types';
+import type { PostScore } from '../winnow/types';
 import { hsl, scoreHue, signalFor } from '../ui/generative';
 
 const STYLE_ID = 'jev-linkedin-styles';

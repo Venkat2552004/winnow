@@ -1,4 +1,4 @@
-import { IMPORTANT_CATEGORIES } from '../jev/types';
+import { IMPORTANT_CATEGORIES } from '../winnow/types';
 import type { Settings } from '../storage';
 import { batchModify } from './api';
 import { previewRecent } from './organizer';

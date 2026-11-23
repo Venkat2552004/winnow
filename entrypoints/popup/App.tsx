@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { GmailStatus, PriorityEntry } from '../../lib/gmail/types';
-import { CATEGORY_SHORT } from '../../lib/jev/types';
+import { CATEGORY_SHORT } from '../../lib/winnow/types';
 import {
   DIAGNOSE_MESSAGE,
   PROBE_MESSAGE,

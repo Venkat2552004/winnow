@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { JevClient, JevConfig } from '../jev/client';
+import type { JevClient, JevConfig } from '../winnow/client';
 import {
   ALL_CATEGORIES,
   CATEGORY_PRIORITY_FLOOR,
@@ -10,7 +10,7 @@ import {
   type EmailInput,
   type PostInput,
   type PostScore,
-} from '../jev/types';
+} from '../winnow/types';
 import {
   isPostType,
   POST_TYPE_BASE,

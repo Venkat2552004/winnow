@@ -1,4 +1,4 @@
-import type { EmailCategory, EmailClassification } from '../jev/types';
+import type { EmailCategory, EmailClassification } from '../winnow/types';
 
 export interface GmailMessageMeta {
   id: string;

@@ -3,7 +3,7 @@ import {
   priorityLabelFor,
   type EmailClassification,
   type EmailInput,
-} from '../jev/types';
+} from '../winnow/types';
 import { classifyEmail } from '../pipeline';
 import { TaskQueue } from '../queue';
 import type { Settings } from '../storage';

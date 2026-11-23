@@ -1,4 +1,4 @@
-import type { PostInput } from '../jev/types';
+import type { PostInput } from '../winnow/types';
 
 /** Legacy post URNs found in data-urn / data-id attributes. */
 const LEGACY_POST_URN = /^urn:li:(activity|aggregate|ugcPost|share|fsd_update|fsd_post):/;

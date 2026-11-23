@@ -174,7 +174,7 @@ entrypoints/
   gmail.content/       Gmail content script shell
   linkedin.content/    LinkedIn content script
 lib/
-  jev/                 typed API client (live + mock) and contracts
+  winnow/              typed API client (live + mock) and contracts
   roar/                OpenAI SDK client for the Roar AI gateway
   llm/                 shared prompts and Sarvam fallback client
   gmail/               API, auth, labels, organizer, unsubscribe, cleanup
@@ -190,7 +190,7 @@ scripts/
   test-roar.mjs        one-shot gateway smoke test
 ```
 
-> The internal `lib/jev/` directory, storage keys, and message types still use `jev` so existing settings and Gmail tokens survive the rename.
+> The internal `lib/winnow/` directory is renamed, but storage keys and message types still use `jev` so existing settings and Gmail tokens survive the rename.
 
 ## Privacy
 

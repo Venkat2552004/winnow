@@ -3,7 +3,7 @@ import {
   DEFAULT_ENABLED_CATEGORIES,
   type EmailCategory,
   type EmailLabelPresetId,
-} from './jev/types';
+} from './winnow/types';
 import { deepMerge, type DeepPartial } from './types';
 
 export interface Settings {

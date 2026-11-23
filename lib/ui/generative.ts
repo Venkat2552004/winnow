@@ -1,4 +1,4 @@
-import type { EmailCategory } from '../jev/types';
+import type { EmailCategory } from '../winnow/types';
 
 /** FNV-1a. Stable across sessions and platforms. */
 export function hashSeed(value: string): number {

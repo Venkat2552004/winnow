@@ -1,6 +1,6 @@
 import { cacheGet, cacheSet } from './cache';
 import { heuristicEmailClassification } from './gmail/heuristics';
-import { createJevClient } from './jev/client';
+import { createJevClient } from './winnow/client';
 import {
   CATEGORY_LABEL,
   CATEGORY_PRIORITY_FLOOR,
@@ -10,7 +10,7 @@ import {
   type EmailInput,
   type PostInput,
   type PostScore,
-} from './jev/types';
+} from './winnow/types';
 import { heuristicPostScore } from './linkedin/heuristics';
 import { sarvamClassifyEmail, sarvamScorePost } from './llm/sarvam';
 import type { Settings } from './storage';
