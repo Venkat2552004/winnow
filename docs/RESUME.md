@@ -18,13 +18,13 @@ Pick 4–6 and fill in the measured numbers after running the eval plan in `docs
 
 - Built a Chrome MV3 extension with two AI-powered workflows: Gmail classification/labeling and LinkedIn feed scoring, using TypeScript, React, WXT, the OpenAI SDK, IndexedDB, and the Gmail REST API.
 - Designed a 16-category email taxonomy and five user presets, with priority floors, protected categories, idempotent label application, and cleanup safeguards for important and starred mail.
-- Designed a 17-type LinkedIn post taxonomy and value-based scoring model that keeps jobs, technical breakdowns, actionable advice, self-improvement, and resources while blurring ads, engagement bait, memes, off-topic posts, and low-effort content.
+- Designed a 17-type LinkedIn post taxonomy with a value score, three presets, and per-type always-blur / always-keep overrides that take precedence over the score threshold.
 - Built a provider-routing pipeline with Roar AI as the primary classifier, Sarvam as a low-confidence fallback, deterministic local heuristics, mock mode, retries, and IndexedDB caching.
 - Hardened OAuth token refresh, Gmail rate-limit handling, cache versioning, label migration, and service-worker restarts; added a risk register and test matrix for the highest-risk failure modes.
-- Built a starter Vitest suite of **85 tests across 12 files** and a golden-fixture eval harness; achieved **100% heuristic accuracy on 23 curated email fixtures** and **22 curated LinkedIn fixtures** (starter baseline).
+- Built a Vitest suite of **111 tests across 15 files** and a golden-fixture eval harness; achieved **100% heuristic accuracy on 23 curated email fixtures** and **22 curated LinkedIn fixtures** (starter baseline).
 - Added a CI quality gate for type-check, unit/integration tests, coverage, heuristic eval, production build, Playwright E2E, and secret scanning.
-- Reached **50.5% line coverage** in the starter suite, with **94%+ on LinkedIn heuristics** and **96%+ on cleanup/labels**; the plan targets 80%+ on pure logic.
-- Achieved **0 false positives and 0 false negatives** on the 22-post starter fixture set at the default threshold of 35.
+- Reached **54.5% line coverage** in the starter suite, with **97%+ on LinkedIn heuristics**, **100% on the LinkedIn decision engine**, and **100% on cleanup/labels**; the plan targets 80%+ on pure logic.
+- Achieved **0 false positives and 0 false negatives** on the 22-post starter fixture set under the Balanced preset, scoring keep/blur through the shipped decision engine rather than a bare score comparison.
 
 ---
 
@@ -34,13 +34,13 @@ Pick 4–6 and fill in the measured numbers after running the eval plan in `docs
 |---|---|---|---|
 | Email macro-F1 | **1.000** (23 curated fixtures) | Expand to 300+ fixtures | Golden email set |
 | Important-category recall | **100%** (starter fixtures) | Keep ≥ 98% on expanded set | Golden email set |
-| LinkedIn keep/blur accuracy | **100%** (22 curated fixtures) | Expand to 300+ fixtures | Golden post set |
+| LinkedIn keep/blur accuracy | **100%** (22 curated fixtures, Balanced preset) | Expand to 300+ fixtures | Golden post set |
 | False-positive blur rate | **0%** (starter fixtures) | Keep ≤ 5% on expanded set | Golden post set |
 | p95 LinkedIn scoring latency | Not measured | ≤ 2.5 s | Performance test |
 | Gmail preview (200 messages) | Not measured | ≤ 60 s cold / ≤ 20 s warm | Performance test |
 | Cache hit rate | Not measured | ≥ 50% on repeat scroll | Instrumented run |
 | Cost per 1,000 classifications | Not measured | Set provider budget | Provider usage |
-| Test coverage | **50.5% lines** (starter) | 80%+ on pure logic | Vitest |
+| Test coverage | **54.5% lines** (starter) | 80%+ on pure logic | Vitest |
 | Critical accessibility violations | Not measured | 0 | axe-core |
 
 > The starter fixture numbers are small and curated to the heuristics. Do not present them as general accuracy. Expand the datasets and run the AI eval before quoting them externally.

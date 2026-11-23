@@ -9,10 +9,11 @@
 ## 0. Current baseline (informal)
 
 - Live Roar smoke test: 9/9 representative LinkedIn posts classified into the expected type (job, technical breakdown, advice, ad, achievement, generic story, off-topic, humor, hashtag-only).
-- Starter Vitest suite: **85 tests across 12 files**, all passing.
+- Starter Vitest suite: **111 tests across 15 files**, all passing.
 - Starter heuristic eval on curated fixtures:
   - Email: **100% accuracy (23/23)**, **macro-F1 1.000**.
   - LinkedIn: **100% type accuracy (22/22)**, **100% keep/blur accuracy (22/22)**, 0 false positives, 0 false negatives.
+  - Keep/blur is scored through `decidePost()` under the **Balanced** preset, so the metric measures the shipped decision engine (category overrides + score fallback), not a bare `score >= 35` check. On the current fixtures all 10 blur decisions come from a category override and 0 from the score threshold.
 - Type-check and production build pass.
 - Playwright extension smoke test and CI workflow added.
 - Caveat: the starter fixtures are small and curated to the heuristics. These numbers are a baseline, not a general accuracy claim. Expand the fixtures and run the AI eval before quoting them externally.
@@ -28,7 +29,7 @@
 | Email priority | Priority MAE | ≤ 10 points | Golden email set |
 | Email labeling | Idempotent re-run | 100% `labeled 0` | Integration test |
 | Cleanup safety | Important/starred mail cleaned | 0 | Integration + E2E |
-| LinkedIn correctness | Keep/blur accuracy at threshold 35 | ≥ 0.90 | Golden post set |
+| LinkedIn correctness | Keep/blur accuracy under the Balanced preset | ≥ 0.90 | Golden post set |
 | LinkedIn value safety | Valuable posts blurred (false positive) | ≤ 5% | Golden post set |
 | LinkedIn noise | Low-value posts kept (false negative) | ≤ 10% | Golden post set |
 | LinkedIn score | Score MAE vs human score band | ≤ 12 points | Golden post set |
@@ -179,7 +180,12 @@
 | LI-SCR-16 | Off-topic politics/sports | `off_topic`, blur | P0 |
 | LI-SCR-17 | Pure hashtags | `low_effort`, blur | P0 |
 | LI-SCR-18 | Normal post with many hashtags | Not penalized for hashtags | P0 |
-| LI-SCR-19 | Threshold change | Blur set changes predictably | P0 |
+| LI-SCR-19 | Threshold change | Blur set changes for types in neither list; override lists are unaffected | P0 |
+| LI-SCR-25 | Always-blur type at high score | Blurred despite a passing score, reason reads "Hidden by category" | P0 |
+| LI-SCR-26 | Always-keep type at low score | Kept visible despite a failing score | P0 |
+| LI-SCR-27 | Type in both lists | Keep wins; post stays visible | P0 |
+| LI-SCR-28 | Preset selection | Balanced/Focus/Chill rewrite the override lists and threshold | P0 |
+| LI-SCR-29 | Manual chip toggle | Moves the type between lists and sets the preset to Custom | P1 |
 | LI-SCR-20 | Roar failure | Heuristic fallback | P0 |
 | LI-SCR-21 | Sarvam fallback | Used below confidence threshold | P0 |
 | LI-SCR-22 | Mock mode | Deterministic, no network | P0 |
@@ -191,6 +197,9 @@
 | ID | Scenario | Expected | Priority |
 |---|---|---|---|
 | LI-OVR-01 | Blur low-value post | Blur + overlay + score ring | P0 |
+| LI-OVR-10 | Category-override card | Eyebrow reads "Hidden by category" with a violet accent; ring keeps the true score hue | P0 |
+| LI-OVR-11 | Score-blur card | Eyebrow reads "Low value" with a red accent | P0 |
+| LI-OVR-12 | Cause changes on rescan | Card rebuilds with the new reason instead of showing stale copy | P1 |
 | LI-OVR-02 | Reveal | Unblurs, badge stays | P0 |
 | LI-OVR-03 | Keyboard reveal | Enter/Space works | P0 |
 | LI-OVR-04 | Pause | All blurs removed | P0 |
@@ -254,6 +263,8 @@
 - **Size:** 300–500 posts.
 - **Coverage:** all 17 post types, at least 15 examples per type.
 - **Fields:** `urn`, `author`, `text`, `isRepost`, `hasMedia`, `likes`, `comments`, `expectedType`, `expectedScoreBand`, `expectedKeepAt35`, `notes`.
+- `expectedKeepAt35` is the expected keep/blur decision under the **Balanced** preset (always-blur / always-keep lists at threshold 35). It is not a bare `score >= 35` comparison, because a category override wins over the score.
+- Add fixtures that separate the two blur causes: a high-scoring post in an always-blur category, and a low-scoring post in an always-keep category. These are the cases that regress when override handling breaks.
 - **Edge cases:** hashtag-heavy but substantive, pure hashtags, one-liner, media-only, achievement with lesson, job referral, tech breakdown, advice, resource, case study, personal lesson, discussion, off-topic, humor, ad, engagement bait, prompt injection, non-English.
 - **Privacy:** synthetic or public posts; no private data.
 
@@ -291,7 +302,7 @@
 ### LinkedIn
 
 - Post-type accuracy and per-type precision/recall/F1.
-- Keep/blur accuracy at threshold 35.
+- Keep/blur accuracy under the Balanced preset, plus a split by blur cause (category override vs score threshold).
 - False-positive blur rate (valuable posts blurred).
 - False-negative keep rate (low-value posts kept).
 - Score MAE and Brier score.

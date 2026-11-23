@@ -8,7 +8,7 @@ Starter golden datasets and a heuristic eval runner.
 npm run eval:heuristics
 ```
 
-The runner reads the JSONL fixtures, runs the local heuristics, writes a report to `evals/reports/`, and exits non-zero if email accuracy or LinkedIn type accuracy drops below 80%.
+The runner reads the JSONL fixtures, runs the local heuristics, writes a report to `evals/reports/`, and exits non-zero if email accuracy or LinkedIn type accuracy drops below 80%. The LinkedIn section also reports how many blurs came from a category override versus the score threshold.
 
 ## Fixtures
 
@@ -58,8 +58,18 @@ One JSON object per line:
 ```
 
 - `expectedType` must be one of the 17 post types, or `skip` for media-only posts.
-- `expectedKeepAt35` is the expected keep/blur decision at the default threshold.
+- `expectedKeepAt35` is the expected keep/blur decision under the **Balanced** preset: the always-blur and always-keep lists at threshold 35.
+- The runner scores keep/blur through `decidePost()` in `lib/linkedin/decision.ts`, the same function the content script uses. A type in the always-keep list stays visible regardless of score; a type in the always-blur list is hidden regardless of score; only types in neither list fall back to `score < threshold`. So `expectedKeepAt35` is not a bare `score >= 35` check.
 - `requiresAI: true` skips the item in the heuristic eval; it belongs in the AI eval.
+
+### Testing category overrides
+
+Because a category override beats the score, the most valuable fixtures are the ones where the two disagree:
+
+- a **high-scoring** post whose type is in the always-blur list (must stay blurred),
+- a **low-scoring** post whose type is in the always-keep list (must stay visible).
+
+Both keep `expectedKeepAt35` matching the override, not the score. A regression in override handling shows up as a keep/blur failure on these rows.
 
 ## Adding examples
 

@@ -29,7 +29,7 @@ Both features share one AI layer: the **Roar AI gateway** (OpenAI-compatible, pr
 | AI backend | Roar AI gateway (OpenAI SDK) primary → Sarvam fallback on low confidence / errors |
 | Stack | WXT + React + TypeScript, MV3 |
 | Distribution | Unpacked, personal use |
-| Blur UX | Blur + click-to-reveal, threshold slider in popup |
+| Blur UX | Blur + click-to-reveal; threshold slider plus category presets and always-blur/keep lists |
 | Key storage | `chrome.storage.local` via options page (never in repo) |
 | AI provider status | Roar AI gateway is live; **mock mode** remains available for offline use |
 
@@ -198,7 +198,9 @@ Authorization: Bearer <jev_key>
    Mapping: `security_alert → Security`, `bank_statement → Finance/Bank`, `invoice → Finance/Invoices`, `payment → Finance/Payments`, `travel → Travel`, `legal → Legal`, `action_required → Action`, `jobs → Jobs`, `personal → Personal`, `shopping → Shopping`, `offers → Offers`, `signup → Signups`, `social → Social`, `alerts → Alerts`, `newsletter → Newsletters`, `other → Other`. Labels are flat by default; an optional prefix groups them under a parent label.
 6. Idempotency: store `messageId → labelVersion` so re-runs don't re-classify or re-label.
 
-**Priority view:** `Priority` label applied when `priority >= 70` (which includes every ★ category by floor). The popup lists top priority threads (subject, sender, age, category, reason). No surgery on Gmail's own DOM.
+**Priority view:** `Priority` label applied when `priority >= 70` (which includes every ★ category by floor). The popup's **Priority** tab lists top priority threads (subject, sender, age, category, reason). No surgery on Gmail's own DOM.
+
+**Organize tab:** the popup's **Organize** tab scans recent mail, groups the preview rows by Winnow label with counts and sample subjects, links each group into Gmail's label search, and applies labels without opening Settings. The last scan is snapshotted for 30 minutes so closing the popup does not lose it.
 
 **Safety:** v1 only *adds* labels. No auto-archive, no auto-delete. Cleanup's "archive all" is manual, confirmed, and refuses ★ categories.
 
@@ -239,9 +241,11 @@ Authorization: Bearer <jev_key>
 - Threshold default 35, adjustable 0–100 in popup.
 
 **Blur UX**
-- Card gets `filter: blur(8px)` + overlay: `Low value · 23/100 · advertisement · click to reveal`.
+- Card gets `filter: blur(8px)` + an overlay card with the score ring, post type, reason, and a **Reveal post** action.
+- The card shows *why* it is hidden: **Hidden by category** (violet accent) for an always-blur override, **Low value** (red accent) for a score below the threshold. The ring always shows the real score, so an always-blurred 92 still reads 92.
 - Click reveals for the session; score badge stays visible.
-- Popup: on/off toggle, threshold slider, "pause on this site", today's stats (scored / blurred / revealed).
+- Popup: on/off toggle, threshold slider, "pause on this site", today's stats (scored / blurred / revealed), and a category summary with an Edit shortcut.
+- Settings: Balanced / Focus / Chill presets plus per-type **Always blur** and **Always keep** lists. Keep wins over blur; types in neither list use the threshold.
 
 ---
 

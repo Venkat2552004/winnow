@@ -36,6 +36,13 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] A normal post with several hashtags but real commentary does **not** blur just because of hashtags.
 - [ ] Clicking a blurred post reveals it; the score badge remains.
 - [ ] Threshold slider changes how many posts blur.
+- [ ] Settings → LinkedIn shows Balanced, Focus, and Chill presets.
+- [ ] Picking a preset updates the blur set on an open LinkedIn tab.
+- [ ] A type on **Always keep** stays visible even with a low score.
+- [ ] A type on **Always blur** is blurred even with a high score.
+- [ ] Moving a type between the two lists removes it from the other list and marks the preset Custom.
+- [ ] Threshold changes only affect post types in neither list.
+- [ ] Popup → Feed shows the preset name, blur/keep counts, and the Edit shortcut.
 - [ ] **Pause on LinkedIn** removes all blurs immediately.
 - [ ] Disabling the feature removes all blurs.
 - [ ] Today's stats increment as you scroll.
@@ -64,6 +71,11 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] Disabling a category stops Winnow from creating or applying that label.
 - [ ] Running **Apply labels** again reports `labeled 0 · skipped N`.
 - [ ] Popup priority inbox shows the top items and links into Gmail.
+- [ ] Popup tabs render: Priority, Organize, Feed.
+- [ ] Popup → Organize → **Scan inbox** groups mail by label with counts and sample subjects.
+- [ ] The group **Open** link opens Gmail filtered by that label.
+- [ ] Closing and reopening the popup keeps the last scan (snapshot under 30 minutes).
+- [ ] Popup → Organize → **Apply labels** reports `labeled N · skipped M · total T`.
 - [ ] **Reset label memory** clears Winnow's record without touching Gmail labels.
 
 ## Unsubscribe & cleanup
@@ -87,6 +99,9 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] Sender rows show seeded gradient avatars with initials.
 - [ ] Cleanup rows show seeded avatars and score rings.
 - [ ] LinkedIn blur overlay shows the score ring, signal mark, reason, and **Reveal post**.
+- [ ] A post hidden by an always-blur override says **Hidden by category**, not **Low value**.
+- [ ] An always-blurred post with a high score shows that high score on the ring and card.
+- [ ] Changing a type to Always keep unblurs its posts; changing it to Always blur re-renders the card reason.
 - [ ] Revealing a post leaves a `Winnow <score>` badge.
 - [ ] With **Reduce motion** enabled in the OS, the aurora drift and transitions stop.
 - [ ] The same sender/post keeps the same colours after a reload.

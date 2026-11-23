@@ -7,7 +7,7 @@
 | **Next** | Full-mailbox labeling mode | Current labeling is capped at 1,000 messages from the last 90 days. Users need a safe way to label the whole mailbox. |
 | Next | AI eval runner with live providers | The heuristic eval is in place; the next step is measuring Roar/Sarvam quality, cost, and latency on expanded fixtures. |
 | Next | Per-category confidence thresholds | Let users tune precision/recall per label instead of one global priority threshold. |
-| Later | User-configurable LinkedIn value categories | Let users choose which post types they want to keep or blur. |
+| **Done** | User-configurable LinkedIn value categories | Presets plus always-blur and always-keep overrides in the LinkedIn settings card. |
 | Later | Multi-account Gmail | Support more than one connected Gmail account. |
 | Later | i18n and multilingual heuristics | Current heuristics are English-first. |
 | Later | Offline queue and better retry UX | Make long runs resilient to network loss. |
@@ -175,9 +175,10 @@ The MV3 service worker can be terminated mid-run, so the job must be resumable f
 
 - Add `npm run eval:ai` that runs the golden fixtures through Roar and Sarvam.
 - Compare against the heuristic baseline.
-- Report accuracy, macro-F1, keep/blur accuracy, calibration, latency, and cost.
+- Report accuracy, macro-F1, keep/blur accuracy (split by blur cause), calibration, latency, and cost.
 - Support `--mock` for CI and `--live` for manual runs.
 - Gate releases on regression thresholds from `docs/EVALS.md`.
+- Evaluate every preset, not just Balanced, so override lists are covered at parity.
 
 ## Next: Per-category confidence thresholds
 
@@ -185,11 +186,13 @@ The MV3 service worker can be terminated mid-run, so the job must be resumable f
 - Low-confidence results fall back to `Other` or stay unlabeled.
 - Add a settings UI and a preview of the effect.
 
-## Later: User-configurable LinkedIn value categories
+## Shipped: User-configurable LinkedIn value categories
 
-- Let users choose which post types are “keep” vs “blur”.
-- Keep the current taxonomy as the default.
-- Add a settings UI with the 17 post types and a threshold slider.
+- Balanced, Focus, and Chill presets seed the category lists.
+- Every post type can be moved to **Always blur** or **Always keep** in settings.
+- Keep wins over blur when a type is in both lists.
+- Types in neither list use the existing **Blur below** score threshold.
+- The popup's Feed tab shows the active preset and list counts, with an Edit shortcut.
 
 ## Later: Multi-account Gmail
 
