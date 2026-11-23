@@ -7,7 +7,7 @@ A Chrome extension that does two things:
 
 Both use the **Roar AI gateway** (OpenAI-compatible, via the official OpenAI SDK) as the primary classifier, with **Sarvam** as a fallback for low-confidence results. **Mock mode** uses deterministic local heuristics, so every feature works end to end without a network call.
 
-Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Visual system: [`docs/DESIGN.md`](docs/DESIGN.md). Manual test checklist: [`docs/TESTING.md`](docs/TESTING.md).
+Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Visual system: [`docs/DESIGN.md`](docs/DESIGN.md). Manual test checklist: [`docs/TESTING.md`](docs/TESTING.md). Evaluation plan: [`docs/EVALS.md`](docs/EVALS.md). Resume notes: [`docs/RESUME.md`](docs/RESUME.md).
 
 ## Status
 
