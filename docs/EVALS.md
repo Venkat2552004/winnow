@@ -377,21 +377,22 @@
 
 ## 8. Improvement roadmap
 
-1. Add Vitest, Playwright, MSW, fake-indexeddb, axe-core, and CI.
-2. Build the golden datasets and eval runner.
+Phase 0 is in place: Vitest, Playwright, MSW, fake-indexeddb, axe-core, CI, golden fixtures, and the heuristic eval runner. The next feature work is:
+
+1. **Full-mailbox labeling mode** — paginated discovery, persistent job state, resume via alarms, chunked `batchModify`, progress/pause/cancel, dry run. See [`ROADMAP.md`](ROADMAP.md).
+2. AI eval runner with live providers (Phase 4).
 3. Add prompt/version metadata to cached results.
 4. Add per-category confidence thresholds and user-configurable LinkedIn value categories.
 5. Add label preview diff and dry-run.
-6. Add Gmail content-script panel or keep the popup-only priority view.
-7. Add multi-account Gmail support.
-8. Add i18n and multilingual heuristics.
-9. Add offline queue and better retry UX.
-10. Add cost/latency budgets per provider.
-11. Add accessibility improvements and keyboard shortcuts.
-12. Add local diagnostics export (no telemetry).
-13. Add migration tooling for label prefixes and taxonomy changes.
-14. Add E2E fixtures for LinkedIn DOM variants and Gmail UI states.
-15. Add contract tests for Roar/Sarvam and chaos tests for provider failures.
+6. Add multi-account Gmail support.
+7. Add i18n and multilingual heuristics.
+8. Add offline queue and better retry UX.
+9. Add cost/latency budgets per provider.
+10. Add accessibility improvements and keyboard shortcuts.
+11. Add local diagnostics export (no telemetry).
+12. Add migration tooling for label prefixes and taxonomy changes.
+13. Add E2E fixtures for LinkedIn DOM variants and Gmail UI states.
+14. Add contract tests for Roar/Sarvam and chaos tests for provider failures.
 
 ---
 
