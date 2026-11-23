@@ -1,7 +1,7 @@
-import type { EmailClassification, EmailInput } from '../jev/types';
+import type { EmailCategory, EmailClassification, EmailInput } from '../jev/types';
 
 interface Rule {
-  category: EmailClassification['category'];
+  category: EmailCategory;
   confidence: number;
   reason: string;
   test: (input: EmailInput) => boolean;
@@ -12,13 +12,17 @@ const subject = (input: EmailInput): string => input.subject.toLowerCase();
 const haystack = (input: EmailInput): string =>
   `${input.from} ${input.subject} ${input.snippet}`.toLowerCase();
 
+/**
+ * Rules run in order. The first match wins, so specific transactional signals
+ * come before broad ones like "has a List-Unsubscribe header".
+ */
 const RULES: Rule[] = [
   {
     category: 'security_alert',
     confidence: 0.92,
-    reason: 'Security/verification language from a service sender',
+    reason: 'Security or verification language',
     test: (i) =>
-      /(password|passcode|verification code|verify your|two-factor|2fa|new login|sign-in attempt|suspicious|security alert|unusual activity)/.test(
+      /(password|passcode|verification code|one-time code|otp|verify your|two-factor|2fa|new login|sign-in attempt|suspicious|security alert|unusual activity|account locked)/.test(
         haystack(i),
       ),
   },
@@ -45,7 +49,7 @@ const RULES: Rule[] = [
     confidence: 0.88,
     reason: 'Booking, itinerary, or reservation language',
     test: (i) =>
-      /(itinerary|boarding pass|flight confirmation|reservation|check-in|booking confirmation|your trip)/.test(
+      /(itinerary|boarding pass|flight confirmation|reservation|check-in|booking confirmation|your trip|hotel|rental car)/.test(
         haystack(i),
       ),
   },
@@ -59,20 +63,56 @@ const RULES: Rule[] = [
       ),
   },
   {
-    category: 'receipt',
-    confidence: 0.85,
-    reason: 'Order or purchase confirmation',
+    category: 'jobs',
+    confidence: 0.86,
+    reason: 'Job alert, recruiter, or application language',
     test: (i) =>
-      /(order confirmed|order confirmation|your receipt|thanks for your order|has shipped|out for delivery|delivered)/.test(
+      /(job alert|new job|recruiter|interview|hiring|career|indeed|glassdoor|ziprecruiter|linkedin job|talent|position at|role at|opportunity at|job application|application received|application update|application status)/.test(
         haystack(i),
       ),
   },
   {
-    category: 'promotion',
-    confidence: 0.8,
-    reason: 'Marketing or discount language',
+    category: 'payment',
+    confidence: 0.84,
+    reason: 'Payment, refund, or subscription-charge language',
     test: (i) =>
-      /(\d+% off|sale ends|limited time|deal of the day|black friday|cyber monday|coupon|promo code)/.test(
+      /(payment received|payment confirmation|payment successful|receipt for your payment|autopay|refund|subscription charge|you were charged|charged to your)/.test(
+        haystack(i),
+      ),
+  },
+  {
+    category: 'shopping',
+    confidence: 0.85,
+    reason: 'Order, shipping, or delivery language',
+    test: (i) =>
+      /(order confirmed|order confirmation|your receipt|thanks for your order|has shipped|out for delivery|delivered|tracking|return request|return label|return your order|start a return|your order)/.test(
+        haystack(i),
+      ),
+  },
+  {
+    category: 'offers',
+    confidence: 0.82,
+    reason: 'Marketing, discount, or sale language',
+    test: (i) =>
+      /(\d+% off|sale ends|limited time|deal of the day|black friday|cyber monday|coupon|promo code|discount|save now|exclusive offer|shop now)/.test(
+        haystack(i),
+      ),
+  },
+  {
+    category: 'signup',
+    confidence: 0.82,
+    reason: 'Welcome, onboarding, or account-activation language',
+    test: (i) =>
+      /(welcome to|complete your profile|getting started|onboarding|activate your account|account created|trial|sign up|registration)/.test(
+        haystack(i),
+      ),
+  },
+  {
+    category: 'social',
+    confidence: 0.84,
+    reason: 'Social media notification or activity',
+    test: (i) =>
+      /(linkedin|facebook|twitter|x\.com|instagram|reddit|discord|tiktok|pinterest|snapchat|mentioned you|new follower|started following|commented|liked your|friend request|connection request|invited you|tagged you)/.test(
         haystack(i),
       ),
   },
@@ -83,19 +123,38 @@ const RULES: Rule[] = [
     test: (i) => i.hasListUnsubscribe,
   },
   {
-    category: 'notification',
-    confidence: 0.75,
-    reason: 'Automated no-reply sender',
-    test: (i) => /(no-?reply|do-?not-?reply|notifications?@)/.test(from(i)),
+    category: 'alerts',
+    confidence: 0.76,
+    reason: 'Automated app, service, or system notification',
+    test: (i) =>
+      /(notification|alert|reminder|monitoring|downtime|incident|status update|service status|usage report|quota|limit reached)/.test(
+        haystack(i),
+      ),
+  },
+  {
+    category: 'action_required',
+    confidence: 0.78,
+    reason: 'Action or response requested',
+    test: (i) =>
+      /(action required|needs your attention|please review|please approve|please sign|please reply|respond by|awaiting your|your approval)/.test(
+        haystack(i),
+      ),
   },
 ];
 
 /**
  * Cheap, deterministic classification. Returns null when no rule fires so the
- * caller can escalate to the AI layer.
+ * caller can escalate to the AI layer. Disabled categories are skipped.
  */
-export function heuristicEmailClassification(input: EmailInput): EmailClassification | null {
+export function heuristicEmailClassification(
+  input: EmailInput,
+  allowed?: readonly EmailCategory[],
+): EmailClassification | null {
+  const allow = (category: EmailCategory): boolean =>
+    !allowed || allowed.length === 0 || allowed.includes(category);
+
   for (const rule of RULES) {
+    if (!allow(rule.category)) continue;
     if (!rule.test(input)) continue;
     return {
       category: rule.category,
@@ -106,9 +165,12 @@ export function heuristicEmailClassification(input: EmailInput): EmailClassifica
     };
   }
 
+  if (!allow('personal')) return null;
+
   // A human-looking sender with no bulk markers is probably personal.
   const looksHuman =
-    !input.hasListUnsubscribe && !/(no-?reply|notifications?@|news@|marketing@)/.test(from(input));
+    !input.hasListUnsubscribe &&
+    !/(no-?reply|notifications?@|alerts?@|news@|marketing@)/.test(from(input));
   if (looksHuman && subject(input).length > 0) {
     return {
       category: 'personal',

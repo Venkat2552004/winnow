@@ -2,7 +2,10 @@ import { cacheGet, cacheSet } from './cache';
 import { heuristicEmailClassification } from './gmail/heuristics';
 import { createJevClient } from './jev/client';
 import {
+  CATEGORY_LABEL,
   CATEGORY_PRIORITY_FLOOR,
+  resolveEmailCategory,
+  type EmailCategory,
   type EmailClassification,
   type EmailInput,
   type PostInput,
@@ -17,7 +20,7 @@ import { clamp, errorMessage } from './types';
  * Bump this when the scoring model or prompt changes. It invalidates cached
  * results from older versions, which otherwise keep showing stale scores.
  */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 
 const EMAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const POST_TTL_MS = 24 * 60 * 60 * 1000;
@@ -31,6 +34,20 @@ function applyPriorityFloor(result: EmailClassification): EmailClassification {
   return {
     ...result,
     priority: clamp(Math.max(result.priority, CATEGORY_PRIORITY_FLOOR[result.category]), 0, 100),
+  };
+}
+
+/** Keeps a result inside the user's enabled categories. */
+function restrictCategory(
+  result: EmailClassification,
+  allowed: readonly EmailCategory[],
+): EmailClassification {
+  if (allowed.length === 0 || allowed.includes(result.category)) return result;
+  const category = resolveEmailCategory(result.category, allowed);
+  return {
+    ...result,
+    category,
+    reason: `${result.reason} (mapped to ${CATEGORY_LABEL[category]})`,
   };
 }
 
@@ -54,10 +71,11 @@ export async function classifyEmail(
   settings: Settings,
 ): Promise<EmailClassification> {
   const cacheKey = `email:${CACHE_VERSION}:${input.id}`;
+  const allowed = settings.gmail.enabledCategories;
   const cached = await cacheGet<EmailClassification>(cacheKey);
-  if (cached) return cached;
+  if (cached) return applyPriorityFloor(restrictCategory(cached, allowed));
 
-  const heuristic = heuristicEmailClassification(input);
+  const heuristic = heuristicEmailClassification(input, allowed);
   if (heuristic && heuristic.confidence >= HEURISTIC_TRUST) {
     const result = applyPriorityFloor(heuristic);
     await cacheResult(cacheKey, result, EMAIL_TTL_MS);
@@ -67,10 +85,10 @@ export async function classifyEmail(
   const jev = createJevClient(settings.jev);
   let result: EmailClassification;
   try {
-    result = await jev.classifyEmail(input);
+    result = await jev.classifyEmail(input, { categories: allowed });
   } catch (error) {
     const message = shortError(error);
-    console.warn('[jev] classifyEmail failed:', message);
+    console.warn('[winnow] classifyEmail failed:', message);
     result = heuristic
       ? { ...heuristic, reason: `${heuristic.reason} (AI unavailable)` }
       : {
@@ -84,14 +102,14 @@ export async function classifyEmail(
 
   if (result.confidence < FALLBACK_BELOW && settings.sarvam.apiKey) {
     try {
-      const better = await sarvamClassifyEmail(input, settings.sarvam);
+      const better = await sarvamClassifyEmail(input, settings.sarvam, allowed);
       if (better.confidence > result.confidence) result = better;
     } catch (error) {
-      console.warn('[jev] Sarvam email fallback failed:', errorMessage(error));
+      console.warn('[winnow] Sarvam email fallback failed:', errorMessage(error));
     }
   }
 
-  const final = applyPriorityFloor(result);
+  const final = applyPriorityFloor(restrictCategory(result, allowed));
   await cacheResult(cacheKey, final, EMAIL_TTL_MS);
   return final;
 }
@@ -113,13 +131,13 @@ export async function scorePost(input: PostInput, settings: Settings): Promise<P
     result = await jev.scorePost(input);
   } catch (error) {
     const message = shortError(error);
-    console.warn('[jev] scorePost failed:', message);
+    console.warn('[winnow] scorePost failed:', message);
     result = heuristic
       ? { ...heuristic, reason: `${heuristic.reason} (AI unavailable)` }
       : {
           score: 50,
           confidence: 0,
-          labels: [],
+          labels: ['other'],
           reason: `Scoring unavailable: ${message}`,
           source: 'error',
         };
@@ -130,7 +148,7 @@ export async function scorePost(input: PostInput, settings: Settings): Promise<P
       const better = await sarvamScorePost(input, settings.sarvam);
       if (better.confidence > result.confidence) result = better;
     } catch (error) {
-      console.warn('[jev] Sarvam post fallback failed:', errorMessage(error));
+      console.warn('[winnow] Sarvam post fallback failed:', errorMessage(error));
     }
   }
 

@@ -192,11 +192,20 @@ function fallbackText(element: HTMLElement): string {
   return best;
 }
 
-function extractText(element: HTMLElement): string {
+function extractText(element: HTMLElement, author: string): string {
+  // Prefer the actual commentary box. Short text is still meaningful here:
+  // "Thoughts?" and pure-hashtag posts should reach the classifier so they can
+  // be blurred as low effort.
   const direct = firstText(element, TEXT_SELECTORS);
-  if (direct.length >= 20) return direct;
+  if (direct) return direct;
+
+  // With no commentary box, fall back to the longest text block. Require
+  // enough text and reject the author header so media-only posts are skipped
+  // instead of being judged on a name or a timestamp.
   const fallback = fallbackText(element);
-  return fallback.length > direct.length ? fallback : direct;
+  if (fallback.length < 20) return '';
+  if (fallback === author || fallback.startsWith(`${author} `)) return '';
+  return fallback;
 }
 
 function parseCount(raw: string | null | undefined): number {
@@ -216,11 +225,12 @@ function countFromText(text: string, pattern: RegExp): number {
 }
 
 export function extractPost(element: HTMLElement): PostInput | null {
-  const text = extractText(element);
-  // Media-only posts can't be judged on text; leave them alone.
-  if (text.length < 20) return null;
-
   const author = firstText(element, AUTHOR_SELECTORS) || 'Unknown';
+  const text = extractText(element, author);
+  // Media-only posts with no commentary can't be judged on text; leave them
+  // alone. Short text posts still go through so low-effort posts can blur.
+  if (!text) return null;
+
   const urn = getUrn(element) ?? `urn:li:jev:${hashString(`${author}|${text}`)}`;
 
   const header = element.querySelector<HTMLElement>(

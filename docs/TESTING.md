@@ -5,10 +5,10 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 ## Install & settings
 
 - [ ] Extension loads unpacked from `.output/chrome-mv3` without errors.
-- [ ] Toolbar icon shows the Jev mark.
+- [ ] Toolbar icon shows the Winnow mark.
 - [ ] Popup opens and shows version, AI mode, fallback, and Gmail status.
 - [ ] Settings opens in a full tab.
-- [ ] First run shows the **Welcome to Jev** card until consent is accepted.
+- [ ] First run shows the **Welcome to Winnow** card until consent is accepted.
 - [ ] Accepting consent hides the card and persists after reopening.
 - [ ] **Test connection** reports the background worker version and mode.
 
@@ -16,15 +16,24 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 
 - [ ] Mock mode is on by default.
 - [ ] **Clear cached scores** reports success and re-scores an open LinkedIn tab.
-- [ ] With no Jev base URL/key, classification still works from heuristics.
+- [ ] With no Winnow base URL/key, classification still works from heuristics.
 - [ ] **Popup → Developer tools → Test AI** returns a provider, model, email category/priority, and post score.
 - [ ] With a live key, obvious bait scores low and a technical/insightful post scores high — not everything at 50.
 
 ## LinkedIn de-slop
 
 - [ ] Open `linkedin.com/feed/`; posts are detected (popup → Developer tools → Diagnose shows `posts found > 0`).
-- [ ] Obvious engagement bait / hype posts blur.
-- [ ] Technical posts stay visible.
+- [ ] Job postings and referrals stay visible.
+- [ ] Technical/project breakdowns stay visible.
+- [ ] Actionable advice, self-improvement, and resource posts stay visible.
+- [ ] Industry insight, case studies, personal lessons, and substantive discussion stay visible.
+- [ ] Ads and promotional posts blur.
+- [ ] Achievements without a lesson blur.
+- [ ] Generic stories and generic motivation blur.
+- [ ] Engagement bait blurs.
+- [ ] Memes, funny videos, and off-topic politics/sports/entertainment blur.
+- [ ] Pure hashtag / one-liner posts blur.
+- [ ] A normal post with several hashtags but real commentary does **not** blur just because of hashtags.
 - [ ] Clicking a blurred post reveals it; the score badge remains.
 - [ ] Threshold slider changes how many posts blur.
 - [ ] **Pause on LinkedIn** removes all blurs immediately.
@@ -38,7 +47,7 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 ## Gmail auth
 
 - [ ] **Connect Gmail** opens Google's consent screen.
-- [ ] Unverified-app warning can be bypassed via **Advanced → Go to Jev**.
+- [ ] Unverified-app warning can be bypassed via **Advanced → Go to Winnow**.
 - [ ] After approval, settings shows **Connected as you@gmail.com**.
 - [ ] **Load recent mail** lists 10 subjects and senders.
 - [ ] **Disconnect** clears the connection and the recent list.
@@ -48,12 +57,14 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 
 - [ ] **Preview classification** returns rows sorted by priority.
 - [ ] Bank statements, invoices, security alerts, travel, and legal mail get the right category.
-- [ ] Security alerts score ≥ 90 and get `Jev/Priority`.
-- [ ] Promotions score low and do not get `Jev/Priority`.
-- [ ] **Apply labels** creates `Jev/*` labels in Gmail and applies them.
+- [ ] Security alerts score ≥ 90 and get `Priority`.
+- [ ] Offers score low and do not get `Priority`.
+- [ ] **Apply labels** creates the selected category labels in Gmail and applies them.
+- [ ] Selecting a preset updates the enabled labels and cleanup defaults.
+- [ ] Disabling a category stops Winnow from creating or applying that label.
 - [ ] Running **Apply labels** again reports `labeled 0 · skipped N`.
 - [ ] Popup priority inbox shows the top items and links into Gmail.
-- [ ] **Reset label memory** clears Jev's record without touching Gmail labels.
+- [ ] **Reset label memory** clears Winnow's record without touching Gmail labels.
 
 ## Unsubscribe & cleanup
 
@@ -63,7 +74,7 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] **Unsubscribe selected** reports posted / opened / archived counts.
 - [ ] One-click senders do not open a tab; link/mailto senders open a background tab.
 - [ ] **Archive after unsubscribe** removes the sender's scanned mail from the inbox.
-- [ ] **Preview cleanup** lists only aged promotions/newsletters/notifications.
+- [ ] **Preview cleanup** lists only aged labels selected as cleanup-eligible.
 - [ ] Starred and important mail never appears in cleanup.
 - [ ] **Archive** removes `INBOX` only; mail remains in All Mail.
 - [ ] **Trash** asks for confirmation and moves mail to Trash.
@@ -76,13 +87,13 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] Sender rows show seeded gradient avatars with initials.
 - [ ] Cleanup rows show seeded avatars and score rings.
 - [ ] LinkedIn blur overlay shows the score ring, signal mark, reason, and **Reveal post**.
-- [ ] Revealing a post leaves a `Jev <score>` badge.
+- [ ] Revealing a post leaves a `Winnow <score>` badge.
 - [ ] With **Reduce motion** enabled in the OS, the aurora drift and transitions stop.
 - [ ] The same sender/post keeps the same colours after a reload.
 
 ## Error handling
 
-- [ ] Invalid Jev key → clear credentials error, then heuristic fallback.
+- [ ] Invalid custom API key → clear credentials error, then heuristic fallback.
 - [ ] Invalid Sarvam key → fallback is skipped, no crash.
 - [ ] Gmail 429 → automatic retry, then a readable rate-limit message.
 - [ ] Expired Gmail token → clear "reconnect" message.

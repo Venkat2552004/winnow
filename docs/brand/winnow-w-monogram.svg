@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="Winnow W Monogram logo concept">
+  <defs>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6b9bff"/>
+      <stop offset="1" stop-color="#8b6bff"/>
+    </linearGradient>
+    <radialGradient id="aurora-blue" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#6b9bff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#6b9bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="aurora-violet" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#8b6bff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#8b6bff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="sieve" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#ffffff" fill-opacity="0.08"/>
+    </pattern>
+    <symbol id="winnow-icon" viewBox="0 0 240 240">
+      <rect x="0" y="0" width="240" height="240" rx="56" fill="#141a24" stroke="url(#signal)" stroke-width="3"/>
+      <rect x="0" y="0" width="240" height="240" rx="56" fill="url(#sieve)"/>
+      <path d="M 50 70 L 90 170 L 120 110 L 150 170 L 190 70" fill="none" stroke="url(#signal)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+
+  <rect width="1200" height="600" fill="#0a0d13"/>
+  <ellipse cx="220" cy="180" rx="360" ry="260" fill="url(#aurora-blue)" filter="url(#blur)"/>
+  <ellipse cx="980" cy="440" rx="380" ry="280" fill="url(#aurora-violet)" filter="url(#blur)"/>
+
+  <g filter="url(#glow)">
+    <use href="#winnow-icon" x="100" y="180" width="240" height="240"/>
+  </g>
+
+  <text x="420" y="300" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="700" letter-spacing="-2" fill="#e8eef8">Winnow</text>
+  <text x="424" y="350" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="600" letter-spacing="6" fill="#8b98ab">KEEP THE SIGNAL.</text>
+  <rect x="424" y="378" width="120" height="2" rx="1" fill="url(#signal)"/>
+
+  <g>
+    <use href="#winnow-icon" x="420" y="478" width="32" height="32"/>
+    <use href="#winnow-icon" x="470" y="462" width="48" height="48"/>
+    <use href="#winnow-icon" x="536" y="446" width="64" height="64"/>
+    <text x="436" y="530" text-anchor="middle" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" fill="#8b98ab">32</text>
+    <text x="494" y="530" text-anchor="middle" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" fill="#8b98ab">48</text>
+    <text x="568" y="530" text-anchor="middle" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" fill="#8b98ab">64</text>
+  </g>
+</svg>

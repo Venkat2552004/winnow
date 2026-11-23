@@ -62,7 +62,7 @@ export default defineContentScript({
     );
 
     function debugLog(...args: unknown[]): void {
-      if (settings?.linkedin.debug) console.info('[jev]', ...args);
+      if (settings?.linkedin.debug) console.info('[winnow]', ...args);
     }
 
     function active(): boolean {
@@ -94,7 +94,7 @@ export default defineContentScript({
         document.body.appendChild(pill);
       }
       const d = diagnostics();
-      pill.textContent = `Jev · ${d.roots} posts · ${d.scored} scored · ${d.blurred} blurred · ${d.revealed} revealed${d.lastError ? ` · error: ${d.lastError}` : ''}`;
+      pill.textContent = `Winnow · ${d.roots} posts · ${d.scored} scored · ${d.blurred} blurred · ${d.revealed} revealed${d.lastError ? ` · error: ${d.lastError}` : ''}`;
     }
 
     function applyDecision(element: HTMLElement, score: PostScore): void {
@@ -181,7 +181,7 @@ export default defineContentScript({
       } catch (error) {
         pending.delete(element);
         lastError = errorMessage(error);
-        console.warn('[jev] failed to score post', error);
+        console.warn('[winnow] failed to score post', error);
         renderPill();
       }
     }
@@ -256,7 +256,7 @@ export default defineContentScript({
     void (async () => {
       settings = await getSettings();
       injectStyles();
-      console.info('[jev] LinkedIn content script loaded');
+      console.info('[winnow] LinkedIn content script loaded');
 
       const observer = new MutationObserver(() => {
         if (scanTimer !== undefined) return;

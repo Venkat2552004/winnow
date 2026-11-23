@@ -74,7 +74,7 @@ export async function sendMessage<K extends RequestType>(
   request: Extract<Request, { type: K }>,
 ): Promise<ResponseFor<K>> {
   const response = (await chrome.runtime.sendMessage(request)) as Envelope<ResponseFor<K>> | undefined;
-  if (!response) throw new Error('No response from the Jev background worker');
+  if (!response) throw new Error('No response from the Winnow background worker');
   if (!response.ok) throw new Error(response.error);
   return response.data;
 }

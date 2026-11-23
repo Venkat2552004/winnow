@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Winnow — brand directions</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0d13;
+    --surface: #141a24;
+    --border: #26303f;
+    --text: #e8eef8;
+    --muted: #8b98ab;
+    --accent: #6b9bff;
+    --accent-2: #8b6bff;
+    --font: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 24px 80px;
+    background:
+      radial-gradient(120% 80% at 12% -10%, rgba(107, 155, 255, 0.14), transparent 60%),
+      radial-gradient(90% 70% at 100% 0%, rgba(139, 107, 255, 0.1), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.5;
+  }
+  main { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  header { display: flex; flex-direction: column; gap: 8px; }
+  h1 { margin: 0; font-size: 34px; letter-spacing: -0.03em; }
+  h2 { margin: 0; font-size: 18px; }
+  p { margin: 0; color: var(--muted); }
+  .tagline { color: var(--accent); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+  .card img { display: block; width: 100%; height: auto; }
+  .card__body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 6px; }
+  .card__body p { font-size: 14px; }
+  .palette { display: flex; flex-wrap: wrap; gap: 10px; }
+  .swatch { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--muted); }
+  .swatch span { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .note { font-size: 13px; color: var(--muted); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="tagline">Keep the signal.</span>
+    <h1>Winnow — brand directions</h1>
+    <p>Three logo directions built from the existing signal-mark, aurora, and score-ring visual language.</p>
+  </header>
+
+  <section class="card">
+    <img src="winnow-signal-sieve.svg" alt="Winnow Signal Sieve logo concept">
+    <div class="card__body">
+      <h2>01 — Signal Sieve</h2>
+      <p>A five-bar waveform doubles as a subtle “W” and a sieve. Noise dots on the left resolve into one clean signal line on the right. Best for the horizontal lockup and the extension header.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <img src="winnow-aurora-wordmark.svg" alt="Winnow Aurora Wordmark logo concept">
+    <div class="card__body">
+      <h2>02 — Aurora Wordmark</h2>
+      <p>A seeded aurora mesh behind a crisp wordmark, with a small signal mark above it. Best for splash screens, onboarding, and the settings header.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <img src="winnow-w-monogram.svg" alt="Winnow W Monogram logo concept">
+    <div class="card__body">
+      <h2>03 — W Monogram</h2>
+      <p>A bold “W” built from signal strokes inside a rounded app icon, shown at 32, 48, and 64 px. Best for the toolbar icon and favicon.</p>
+    </div>
+  </section>
+
+  <section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+    <h2>App icon exports</h2>
+    <div class="palette" style="align-items: flex-end;">
+      <img src="icons/icon-16.png" width="16" height="16" alt="16 px icon">
+      <img src="icons/icon-32.png" width="32" height="32" alt="32 px icon">
+      <img src="icons/icon-48.png" width="48" height="48" alt="48 px icon">
+      <img src="icons/icon-96.png" width="96" height="96" alt="96 px icon">
+      <img src="icons/icon-128.png" width="128" height="128" alt="128 px icon">
+    </div>
+    <p class="note">Copy these into <code>public/icon/</code> when you're ready to rebrand the extension.</p>
+  </section>
+
+  <section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+    <h2>Palette</h2>
+    <div class="palette">
+      <div class="swatch"><span style="background:#0a0d13"></span>#0a0d13</div>
+      <div class="swatch"><span style="background:#141a24"></span>#141a24</div>
+      <div class="swatch"><span style="background:#6b9bff"></span>#6b9bff</div>
+      <div class="swatch"><span style="background:#8b6bff"></span>#8b6bff</div>
+      <div class="swatch"><span style="background:#46d1c0"></span>#46d1c0</div>
+      <div class="swatch"><span style="background:#e8eef8"></span>#e8eef8</div>
+      <div class="swatch"><span style="background:#8b98ab"></span>#8b98ab</div>
+    </div>
+    <p class="note">The SVGs are vector and use the system sans-serif stack. For production, set the wordmark in your chosen typeface and export the icon at 16, 32, 48, 96, and 128 px.</p>
+  </section>
+</main>
+</body>
+</html>

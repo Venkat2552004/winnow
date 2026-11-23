@@ -7,8 +7,11 @@ export default defineConfig({
     envPrefix: ['WXT_', 'ROAR_'],
   }),
   manifest: {
-    name: 'Jev',
-    description: 'Organize Gmail and de-slop your LinkedIn feed.',
+    name: 'Winnow',
+    description: 'Keep the signal in Gmail and LinkedIn.',
+    action: {
+      default_title: 'Winnow',
+    },
     permissions: ['storage', 'identity', 'declarativeNetRequest'],
     declarative_net_request: {
       rule_resources: [

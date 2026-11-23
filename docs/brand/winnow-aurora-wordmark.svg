@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="Winnow Aurora Wordmark logo concept">
+  <defs>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6b9bff"/>
+      <stop offset="1" stop-color="#8b6bff"/>
+    </linearGradient>
+    <radialGradient id="aurora-blue" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#6b9bff" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#6b9bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="aurora-violet" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#8b6bff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#8b6bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="aurora-teal" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#46d1c0" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#46d1c0" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="70"/>
+    </filter>
+    <filter id="soft-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="grain" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.7" fill="#ffffff" fill-opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="600" fill="#0a0d13"/>
+  <ellipse cx="240" cy="140" rx="420" ry="280" fill="url(#aurora-blue)" filter="url(#blur)"/>
+  <ellipse cx="960" cy="260" rx="440" ry="300" fill="url(#aurora-violet)" filter="url(#blur)"/>
+  <ellipse cx="420" cy="520" rx="380" ry="240" fill="url(#aurora-teal)" filter="url(#blur)"/>
+  <rect width="1200" height="600" fill="url(#grain)"/>
+
+  <g filter="url(#soft-glow)" fill="url(#signal)">
+    <rect x="560" y="170" width="8" height="24" rx="4"/>
+    <rect x="576" y="156" width="8" height="52" rx="4"/>
+    <rect x="592" y="140" width="8" height="84" rx="4"/>
+    <rect x="608" y="156" width="8" height="52" rx="4"/>
+    <rect x="624" y="170" width="8" height="24" rx="4"/>
+  </g>
+
+  <text x="600" y="340" text-anchor="middle" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="150" font-weight="700" letter-spacing="-4" fill="#e8eef8">Winnow</text>
+  <text x="600" y="400" text-anchor="middle" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="600" letter-spacing="8" fill="#8b98ab">KEEP THE SIGNAL.</text>
+  <rect x="450" y="372" width="300" height="2" rx="1" fill="url(#signal)" opacity="0.8"/>
+</svg>

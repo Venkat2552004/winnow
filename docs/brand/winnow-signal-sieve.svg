@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-label="Winnow Signal Sieve logo concept">
+  <defs>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6b9bff"/>
+      <stop offset="1" stop-color="#8b6bff"/>
+    </linearGradient>
+    <radialGradient id="aurora-blue" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#6b9bff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#6b9bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="aurora-violet" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#8b6bff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#8b6bff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="sieve" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#ffffff" fill-opacity="0.08"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="600" fill="#0a0d13"/>
+  <ellipse cx="200" cy="160" rx="340" ry="240" fill="url(#aurora-blue)" filter="url(#blur)"/>
+  <ellipse cx="980" cy="460" rx="360" ry="260" fill="url(#aurora-violet)" filter="url(#blur)"/>
+
+  <g fill="#8b98ab">
+    <circle cx="38" cy="250" r="3" opacity="0.5"/>
+    <circle cx="56" cy="286" r="2" opacity="0.4"/>
+    <circle cx="42" cy="322" r="4" opacity="0.35"/>
+    <circle cx="64" cy="350" r="2" opacity="0.3"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <rect x="90" y="210" width="180" height="180" rx="42" fill="#141a24" stroke="url(#signal)" stroke-width="2"/>
+    <rect x="90" y="210" width="180" height="180" rx="42" fill="url(#sieve)"/>
+    <g fill="url(#signal)">
+      <rect x="120" y="235" width="16" height="130" rx="8"/>
+      <rect x="150" y="265" width="16" height="70" rx="8"/>
+      <rect x="180" y="240" width="16" height="120" rx="8"/>
+      <rect x="210" y="265" width="16" height="70" rx="8"/>
+      <rect x="240" y="235" width="16" height="130" rx="8"/>
+    </g>
+  </g>
+
+  <line x1="292" y1="300" x2="360" y2="300" stroke="url(#signal)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="368" cy="300" r="4" fill="#6b9bff"/>
+
+  <text x="420" y="300" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="700" letter-spacing="-2" fill="#e8eef8">Winnow</text>
+  <text x="424" y="350" font-family="Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="600" letter-spacing="6" fill="#8b98ab">KEEP THE SIGNAL.</text>
+  <rect x="424" y="378" width="120" height="2" rx="1" fill="url(#signal)"/>
+</svg>

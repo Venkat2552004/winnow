@@ -7,7 +7,18 @@ import type {
   OrganizeRow,
   UnsubscribeSender,
 } from '../../lib/gmail/types';
-import { CATEGORY_LABEL } from '../../lib/jev/types';
+import {
+  ALL_CATEGORIES,
+  CATEGORY_GROUP,
+  CATEGORY_GROUP_LABEL,
+  CATEGORY_LABEL,
+  EMAIL_LABEL_PRESETS,
+  gmailLabelFor,
+  priorityLabelFor,
+  type CategoryGroup,
+  type EmailCategory,
+  type EmailLabelPresetId,
+} from '../../lib/jev/types';
 import { sendMessage } from '../../lib/messaging';
 import { getSettings, updateSettings, type Settings } from '../../lib/storage';
 import { errorMessage } from '../../lib/types';
@@ -21,6 +32,16 @@ type Toast = { kind: 'ok' | 'err'; text: string };
 
 const vars = (values: Record<string, string | number>): CSSProperties =>
   values as CSSProperties;
+
+const CATEGORY_GROUPS: readonly CategoryGroup[] = ['important', 'money', 'accounts', 'other'];
+
+const CATEGORIES_BY_GROUP = CATEGORY_GROUPS.reduce(
+  (groups, group) => {
+    groups[group] = ALL_CATEGORIES.filter((category) => CATEGORY_GROUP[category] === group);
+    return groups;
+  },
+  {} as Record<CategoryGroup, EmailCategory[]>,
+);
 
 function SectionHead({
   seed,
@@ -82,6 +103,45 @@ export default function App() {
   const setConsent = (value: Partial<Settings['consent']>): void =>
     setDraft((prev) => prev && { ...prev, consent: { ...prev.consent, ...value } });
 
+  function applyPreset(id: EmailLabelPresetId): void {
+    const preset = EMAIL_LABEL_PRESETS.find((item) => item.id === id);
+    if (!preset) return;
+    setGmail({
+      labelPreset: preset.id,
+      enabledCategories: [...preset.enabledCategories],
+      cleanupCategories: [...preset.cleanupCategories],
+      priorityThreshold: preset.priorityThreshold,
+    });
+  }
+
+  function toggleCategory(category: EmailCategory): void {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const enabled = prev.gmail.enabledCategories.includes(category);
+      const enabledCategories = enabled
+        ? prev.gmail.enabledCategories.filter((item) => item !== category)
+        : [...prev.gmail.enabledCategories, category];
+      return {
+        ...prev,
+        gmail: { ...prev.gmail, enabledCategories, labelPreset: 'custom' },
+      };
+    });
+  }
+
+  function toggleCleanupCategory(category: EmailCategory): void {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const enabled = prev.gmail.cleanupCategories.includes(category);
+      const cleanupCategories = enabled
+        ? prev.gmail.cleanupCategories.filter((item) => item !== category)
+        : [...prev.gmail.cleanupCategories, category];
+      return {
+        ...prev,
+        gmail: { ...prev.gmail, cleanupCategories, labelPreset: 'custom' },
+      };
+    });
+  }
+
   async function save(): Promise<void> {
     if (!draft) return;
     try {
@@ -99,7 +159,7 @@ export default function App() {
     try {
       const ping = await sendMessage({ type: 'ping' });
       const provider =
-        ping.provider === 'roar' ? 'Roar AI' : ping.provider === 'jev' ? 'Jev API' : 'mock';
+        ping.provider === 'roar' ? 'Roar AI' : ping.provider === 'jev' ? 'Custom API' : 'mock';
       setToast({
         kind: 'ok',
         text: `Background worker OK · v${ping.version} · ${provider} · ${ping.mode} mode`,
@@ -351,13 +411,13 @@ export default function App() {
   return (
     <div className="stack" style={{ gap: 20 }}>
       <header className="card app-header">
-        <Aurora seed="jev-options-header" hue={228} />
+        <Aurora seed="winnow-options-header" hue={228} />
         <div className="app-header__content">
           <div className="brand">
-            <SignalMark seed="jev-brand" size={30} bars={5} title="Jev" />
+            <SignalMark seed="winnow-brand" size={30} bars={5} title="Winnow" />
             <div>
-              <h1>Jev settings</h1>
-              <p className="brand__tag">Keys stay in this browser</p>
+              <h1>Winnow settings</h1>
+              <p className="brand__tag">Keep the signal</p>
             </div>
           </div>
           <div className="row" style={{ gap: 8 }}>
@@ -375,10 +435,10 @@ export default function App() {
 
       {!draft.consent.dataSharingAccepted && (
         <section className="card section onboarding">
-          <Aurora seed="jev-onboarding" hue={252} />
+          <Aurora seed="winnow-onboarding" hue={252} />
           <div className="onboarding__content">
             <div>
-              <h2>Welcome to Jev</h2>
+              <h2>Welcome to Winnow</h2>
               <p className="muted small">
                 Two tools in one extension: a Gmail organizer and a LinkedIn feed filter.
                 Everything runs locally except the classification calls described below.
@@ -386,8 +446,8 @@ export default function App() {
             </div>
             <ul className="checklist">
               <li>
-                <strong>Gmail</strong> — reads sender, subject, and snippet; applies Jev/* labels;
-                archives or trashes only when you click.
+                <strong>Gmail</strong> — reads sender, subject, and snippet; applies category
+                labels; archives or trashes only when you click.
               </li>
               <li>
                 <strong>LinkedIn</strong> — reads visible post text and blurs low-value posts
@@ -417,7 +477,7 @@ export default function App() {
 
       <section className="card section">
         <SectionHead
-          seed="jev-api"
+          seed="winnow-api"
           hue={230}
           title="AI provider"
           subtitle="OpenAI-compatible gateway. Mock mode uses deterministic local rules."
@@ -441,9 +501,9 @@ export default function App() {
           </label>
         </div>
         <div className="field">
-          <label htmlFor="jev-base">Base URL</label>
+          <label htmlFor="winnow-base">Base URL</label>
           <input
-            id="jev-base"
+            id="winnow-base"
             placeholder="https://api.roar-ai.com/v1"
             value={draft.jev.baseUrl}
             disabled={draft.jev.useRoar}
@@ -451,9 +511,9 @@ export default function App() {
           />
         </div>
         <div className="field">
-          <label htmlFor="jev-key">API key</label>
+          <label htmlFor="winnow-key">API key</label>
           <input
-            id="jev-key"
+            id="winnow-key"
             type="password"
             placeholder="roar_…"
             value={draft.jev.apiKey}
@@ -493,10 +553,10 @@ export default function App() {
 
       <section className="card section">
         <SectionHead
-          seed="jev-sarvam"
+          seed="winnow-sarvam"
           hue={268}
           title="Sarvam fallback"
-          subtitle="Used only when Jev is unavailable or returns low confidence."
+          subtitle="Used only when the primary provider is unavailable or returns low confidence."
         />
         <div className="grid-2">
           <div className="field">
@@ -528,10 +588,10 @@ export default function App() {
         </div>
       </section>
 
-      <section className="card card--glow section" style={vars(glowVars('jev-gmail', 212))}>
+      <section className="card card--glow section" style={vars(glowVars('winnow-gmail', 212))}>
         <div className="row">
           <SectionHead
-            seed="jev-gmail"
+            seed="winnow-gmail"
             hue={212}
             title="Gmail organizer"
             subtitle="Auto-label recent mail and build a priority view."
@@ -712,7 +772,10 @@ export default function App() {
         <div className="row">
           <div>
             <h2>Auto-label</h2>
-            <p className="muted small">Apply Jev/* labels. Never archives or deletes.</p>
+            <p className="muted small">
+              Apply category labels. Priority labels are controlled separately. Never archives
+              or deletes.
+            </p>
           </div>
           <label className="switch">
             <input
@@ -724,6 +787,107 @@ export default function App() {
             <span />
           </label>
         </div>
+      </section>
+
+      <section className="card card--glow section" style={vars(glowVars('winnow-labels', 212))}>
+        <SectionHead
+          seed="winnow-labels"
+          hue={212}
+          title="Email labels"
+          subtitle="Pick a preset, then fine-tune which labels Winnow creates and applies."
+        />
+
+        <div className="preset-grid">
+          {EMAIL_LABEL_PRESETS.map((preset) => {
+            const selected = draft.gmail.labelPreset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                className={`preset-card${selected ? ' preset-card--active' : ''}`}
+                onClick={() => applyPreset(preset.id)}
+              >
+                <span className="preset-card__name">{preset.name}</span>
+                <span className="preset-card__desc">{preset.description}</span>
+                <span className="preset-card__meta">
+                  {preset.enabledCategories.length} labels · priority {preset.priorityThreshold}+
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {draft.gmail.labelPreset === 'custom' && (
+          <p className="small muted">Custom selection — pick the labels you want below.</p>
+        )}
+
+        {CATEGORY_GROUPS.map((group) => (
+          <div key={group} className="stack" style={{ gap: 6 }}>
+            <div className="row">
+              <span className="small muted">{CATEGORY_GROUP_LABEL[group]}</span>
+              <span className="small muted">
+                {
+                  CATEGORIES_BY_GROUP[group].filter((category) =>
+                    draft.gmail.enabledCategories.includes(category),
+                  ).length
+                }
+                /{CATEGORIES_BY_GROUP[group].length}
+              </span>
+            </div>
+            <div className="label-grid">
+              {CATEGORIES_BY_GROUP[group].map((category) => {
+                const checked = draft.gmail.enabledCategories.includes(category);
+                return (
+                  <label
+                    key={category}
+                    className={`label-chip${checked ? ' label-chip--on' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCategory(category)}
+                    />
+                    <span>{CATEGORY_LABEL[category]}</span>
+                    <code>{gmailLabelFor(category, draft.gmail.labelPrefix)}</code>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        <div className="grid-2">
+          <div className="field">
+            <label htmlFor="label-prefix">Label prefix</label>
+            <input
+              id="label-prefix"
+              placeholder="(none)"
+              value={draft.gmail.labelPrefix}
+              onChange={(event) =>
+                setGmail({ labelPrefix: event.target.value, labelPreset: 'custom' })
+              }
+            />
+            <p className="muted small">
+              Leave empty for flat labels like <code>Security</code> and{' '}
+              <code>Finance/Bank</code>. Flat labels can collide with labels you already use.
+            </p>
+          </div>
+          <div className="field">
+            <label>Priority label</label>
+            <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={draft.gmail.applyPriorityLabel}
+                onChange={(event) => setGmail({ applyPriorityLabel: event.target.checked })}
+              />
+              <span className="small">
+                Apply <code>{priorityLabelFor(draft.gmail.labelPrefix)}</code> at or above the
+                threshold
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div className="field">
           <div className="row">
             <label htmlFor="gmail-priority">Priority threshold</label>
@@ -739,11 +903,39 @@ export default function App() {
             onChange={(event) => setGmail({ priorityThreshold: Number(event.target.value) })}
           />
         </div>
+
+        <div className="field">
+          <label>Cleanup-eligible labels</label>
+          <p className="muted small">
+            Bulk cleanup only considers these labels. Important categories, starred mail, and
+            important mail are always excluded.
+          </p>
+          <div className="label-grid">
+            {draft.gmail.enabledCategories
+              .filter((category) => CATEGORY_GROUP[category] !== 'important')
+              .map((category) => {
+                const checked = draft.gmail.cleanupCategories.includes(category);
+                return (
+                  <label
+                    key={category}
+                    className={`label-chip${checked ? ' label-chip--on' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleCleanupCategory(category)}
+                    />
+                    <span>{CATEGORY_LABEL[category]}</span>
+                  </label>
+                );
+              })}
+          </div>
+        </div>
       </section>
 
-      <section className="card card--glow section" style={vars(glowVars('jev-unsubscribe', 172))}>
+      <section className="card card--glow section" style={vars(glowVars('winnow-unsubscribe', 172))}>
         <SectionHead
-          seed="jev-unsubscribe"
+          seed="winnow-unsubscribe"
           hue={172}
           title="Unsubscribe & cleanup"
           subtitle="One-click requests are sent directly; other links open in a background tab."
@@ -819,10 +1011,10 @@ export default function App() {
         <div className="divider" />
 
         <SectionHead
-          seed="jev-cleanup"
+          seed="winnow-cleanup"
           hue={38}
           title="Bulk cleanup"
-          subtitle="Aged promotions, newsletters, and notifications. Starred and important mail is never touched."
+          subtitle="Aged offers, newsletters, alerts, and other low-value mail. Starred and important mail is never touched."
         />
 
         <div className="field">
@@ -891,13 +1083,13 @@ export default function App() {
         )}
       </section>
 
-      <section className="card card--glow section" style={vars(glowVars('jev-linkedin', 194))}>
+      <section className="card card--glow section" style={vars(glowVars('winnow-linkedin', 194))}>
         <div className="row">
           <SectionHead
-            seed="jev-linkedin"
+            seed="winnow-linkedin"
             hue={194}
             title="LinkedIn de-slop"
-            subtitle="Blur posts that score below the threshold."
+            subtitle="Keep jobs, technical breakdowns, actionable advice, self-improvement, and resources. Blur the rest."
           />
           <label className="switch">
             <input
@@ -923,6 +1115,18 @@ export default function App() {
             value={draft.linkedin.threshold}
             onChange={(event) => setLinkedin({ threshold: Number(event.target.value) })}
           />
+        </div>
+        <div className="stack" style={{ gap: 4 }}>
+          <p className="small muted">
+            <strong>Keeps:</strong> job postings and referrals, technical breakdowns, actionable
+            advice, self-improvement, resources, industry insight, case studies, personal lessons
+            with a takeaway, and substantive discussion.
+          </p>
+          <p className="small muted">
+            <strong>Blurs:</strong> ads, achievements without a lesson, generic stories,
+            engagement bait, memes and funny videos, off-topic politics/sports/entertainment, and
+            low-effort posts. Hashtags are common on LinkedIn and are not penalized by themselves.
+          </p>
         </div>
         <div className="row">
           <div>
@@ -960,10 +1164,10 @@ export default function App() {
 
       <section className="card section">
         <SectionHead
-          seed="jev-privacy"
+          seed="winnow-privacy"
           hue={268}
           title="Privacy"
-          subtitle="Metadata and post text go to Jev, and to Sarvam when the fallback is used. Full email bodies never leave the browser."
+          subtitle="Metadata and post text go to Winnow, and to Sarvam when the fallback is used. Full email bodies never leave the browser."
         />
         <label className="row" style={{ justifyContent: 'flex-start', gap: 8 }}>
           <input

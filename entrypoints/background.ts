@@ -38,7 +38,7 @@ export default defineBackground(() => {
     ?.getEnabledRulesets()
     .then((ids) => {
       if (!ids.includes('roar-headers')) {
-        console.warn('[jev] Roar header rule is not enabled — requests may get a 403');
+        console.warn('[winnow] Roar header rule is not enabled — requests may get a 403');
       }
     })
     .catch(() => undefined);
@@ -95,7 +95,7 @@ export default defineBackground(() => {
 
       const post = await jev.scorePost({
         urn: 'urn:li:jev:test',
-        author: 'Jev test',
+        author: 'Winnow test',
         text: 'We migrated 40 services to Postgres 17 over six months. The biggest win was deleting 12,000 lines of ORM code. Here is the migration plan we used, including the rollback steps.',
         isRepost: false,
         hasMedia: false,
@@ -152,13 +152,18 @@ export default defineBackground(() => {
       return withGmailToken(async (token) => ({ rows: await previewRecent(token, settings) }));
     },
     'gmail:apply': async ({ rows }) => {
-      return withGmailToken(async (token) => applyLabels(token, rows));
+      const settings = await getSettings();
+      return withGmailToken(async (token) => applyLabels(token, rows, settings));
     },
     'gmail:priority': async () => {
       const settings = await getSettings();
+      const enabled = new Set(settings.gmail.enabledCategories);
       const items = await getPriorityItems(50);
       return {
-        items: items.filter((item) => item.priority >= settings.gmail.priorityThreshold),
+        items: items.filter(
+          (item) =>
+            enabled.has(item.category) && item.priority >= settings.gmail.priorityThreshold,
+        ),
       };
     },
     'gmail:reset': async () => {

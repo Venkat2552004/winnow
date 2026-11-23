@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Jev — Gmail organizer and LinkedIn de-slop, in one Chrome extension.",
+  "description": "Winnow — Gmail organizer and LinkedIn de-slop, in one Chrome extension.",
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",

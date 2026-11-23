@@ -1,4 +1,4 @@
-# Jev — Chrome Extension Plan
+# Winnow — Chrome Extension Plan
 
 **Status:** Draft v0.1 · awaiting sign-off
 **Scope:** Personal use, loaded unpacked (no Chrome Web Store review in v1)
@@ -7,7 +7,7 @@
 
 ## 1. Product summary
 
-A single MV3 extension, **Jev**, with two independent features:
+A single MV3 extension, **Winnow**, with two independent features:
 
 | # | Feature | Surface | What it does |
 |---|---------|---------|--------------|
@@ -47,10 +47,10 @@ jev/
 │   ├── background.ts              # service worker: message router, queues, API calls
 │   ├── popup/                     # global toggles, thresholds, stats
 │   ├── options/                   # keys, OAuth client ID, test-connection, cache reset
-│   ├── gmail.content/             # content script + Jev panel on mail.google.com
+│   ├── gmail.content/             # content script + Winnow panel on mail.google.com
 │   └── linkedin.content/          # content script + blur overlay on linkedin.com
 ├── lib/
-│   ├── jev/client.ts              # typed Jev client (real + mock)
+│   ├── jev/client.ts              # typed AI client (real + mock)
 │   ├── jev/types.ts               # request/response contracts
 │   ├── llm/sarvam.ts              # fallback client (OpenAI-compatible)
 │   ├── gmail/auth.ts              # OAuth flow, token cache, silent re-auth
@@ -83,7 +83,7 @@ jev/
 
 ---
 
-## 4. Jev API contract (proposed — needs your confirmation)
+## 4. Custom API contract (proposed — needs your confirmation)
 
 ```http
 POST {baseUrl}/v1/classify/email
@@ -104,7 +104,7 @@ Content-Type: application/json
 
 ```json
 {
-  "category": "action_required | personal | bank_statement | invoice | receipt | security_alert | travel | legal | newsletter | notification | promotion | other",
+  "category": "security_alert | bank_statement | invoice | travel | legal | action_required | jobs | personal | payment | shopping | offers | signup | social | alerts | newsletter | other",
   "priority": 0,
   "confidence": 0.0,
   "reason": "string"
@@ -115,18 +115,22 @@ Content-Type: application/json
 
 | Category | Meaning | Priority floor |
 |---|---|---|
-| ★ `security_alert` | Password resets, 2FA, new login, suspicious activity | 90 |
+| ★ `security_alert` | Password resets, verification codes, 2FA, new login, suspicious activity | 90 |
 | ★ `bank_statement` | Bank/credit-card statements, account summaries, tax docs | 85 |
 | ★ `invoice` | Bills due, invoices, payment requests | 80 |
 | ★ `travel` | Bookings, itineraries, boarding passes, cancellations | 75 |
 | ★ `legal` | Contracts, insurance, government/tax correspondence | 75 |
-| ★ `action_required` | Needs a reply or a decision | 70 |
+| ★ `action_required` | Needs a reply, approval, signature, or decision | 70 |
+| ★ `jobs` | Job alerts, recruiter messages, application/interview updates | 65 |
 | ★ `personal` | Real human correspondence | 60 |
-| `receipt` | Purchase confirmations, order shipped | 40 |
-| `notification` | App/social/service notifications | 30 |
-| `newsletter` | Opted-in digests and content | 20 |
-| `promotion` | Marketing, sales, offers | 10 |
+| `payment` | Payment confirmations, autopay, refunds, subscription charges | 55 |
+| `signup` | Welcome emails, onboarding, account activation, trial reminders | 50 |
+| `shopping` | Order confirmations, shipping, delivery, returns, receipts | 45 |
+| `alerts` | App/service notifications, system alerts, reminders | 35 |
+| `social` | Social media notifications, mentions, follows, comments | 30 |
 | `other` | Unclassified | 30 |
+| `newsletter` | Opted-in digests and content | 20 |
+| `offers` | Marketing, sales, discounts, promo codes | 10 |
 
 ```http
 POST {baseUrl}/v1/score/post
@@ -154,9 +158,9 @@ Authorization: Bearer <jev_key>
 }
 ```
 
-**Mock mode:** if no Jev key is set (or `JEV_MOCK=1`), the client returns deterministic heuristic-derived responses. The entire extension is usable end-to-end before the API exists. Swapping in the real API is a one-file change.
+**Mock mode:** if no custom API key is set (or `JEV_MOCK=1`), the client returns deterministic heuristic-derived responses. The entire extension is usable end-to-end before the API exists. Swapping in the real API is a one-file change.
 
-**Fallback routing:** if `confidence < 0.6` or the Jev call errors/times out (2s), escalate to Sarvam with a compact prompt. Results cached either way.
+**Fallback routing:** if `confidence < 0.6` or the primary call errors/times out (2s), escalate to Sarvam with a compact prompt. Results cached either way.
 
 ---
 
@@ -167,29 +171,34 @@ Authorization: Bearer <jev_key>
 **Flow**
 1. Background job fetches recent mail: `users.messages.list` (default: last 7 days, cap 200, paginated).
 2. Fetch metadata only: `users.messages.get?format=metadata` with `From, Subject, Date, List-Unsubscribe, List-Id` + `snippet`.
-3. **Heuristic pre-filter** (no API cost): `List-Unsubscribe` present → newsletter candidate; `noreply@`/`no-reply@` → notification; known receipt domains → receipt; else → send to Jev.
-4. Jev classifies → category + priority + confidence.
+3. **Heuristic pre-filter** (no API cost): security, finance, travel, jobs, shopping, offers, signup, social, alerts, and newsletter signals resolve locally; ambiguous mail goes to Winnow.
+4. Winnow classifies → category + priority + confidence.
 5. Create missing labels once, then `users.messages.batchModify`:
 
    ```
-   Jev/Priority
-   Jev/Action
-   Jev/Personal
-   Jev/Security
-   Jev/Travel
-   Jev/Legal
-   Jev/Finance
-   Jev/Finance/Bank
-   Jev/Finance/Receipts
-   Jev/Newsletter
-   Jev/Notifications
-   Jev/Promotions
+   Priority
+   Security
+   Finance/Bank
+   Finance/Invoices
+   Finance/Payments
+   Travel
+   Legal
+   Action
+   Jobs
+   Personal
+   Shopping
+   Offers
+   Signups
+   Social
+   Alerts
+   Newsletters
+   Other
    ```
 
-   Mapping: `bank_statement → Jev/Finance/Bank`, `invoice`/`receipt → Jev/Finance/Receipts`, `security_alert → Jev/Security`, `travel → Jev/Travel`, `legal → Jev/Legal`, `action_required → Jev/Action`, `personal → Jev/Personal`, `newsletter → Jev/Newsletter`, `notification → Jev/Notifications`, `promotion → Jev/Promotions`.
+   Mapping: `security_alert → Security`, `bank_statement → Finance/Bank`, `invoice → Finance/Invoices`, `payment → Finance/Payments`, `travel → Travel`, `legal → Legal`, `action_required → Action`, `jobs → Jobs`, `personal → Personal`, `shopping → Shopping`, `offers → Offers`, `signup → Signups`, `social → Social`, `alerts → Alerts`, `newsletter → Newsletters`, `other → Other`. Labels are flat by default; an optional prefix groups them under a parent label.
 6. Idempotency: store `messageId → labelVersion` so re-runs don't re-classify or re-label.
 
-**Priority view:** `Jev/Priority` label applied when `priority >= 70` (which includes every ★ category by floor). A floating **Jev** button on Gmail opens a panel listing top priority threads (subject, sender, age, category, reason). No surgery on Gmail's own DOM.
+**Priority view:** `Priority` label applied when `priority >= 70` (which includes every ★ category by floor). The popup lists top priority threads (subject, sender, age, category, reason). No surgery on Gmail's own DOM.
 
 **Safety:** v1 only *adds* labels. No auto-archive, no auto-delete. Cleanup's "archive all" is manual, confirmed, and refuses ★ categories.
 
@@ -213,19 +222,24 @@ Authorization: Bearer <jev_key>
 - Resilient selectors: `[data-urn^="urn:li:activity"]`, `.feed-shared-update-v2`, text via `.update-components-text` / `.feed-shared-text`, with fallbacks.
 - Extract: URN, author, text, isRepost, hasMedia, likes, comments.
 
+**Post taxonomy**
+- Keep: job opportunity/referral, technical breakdown, actionable advice, self-improvement, resource, industry insight, case study, personal lesson, substantive discussion.
+- Blur: advertisement, achievement without a lesson, generic story, engagement bait, humor/meme, off-topic (politics, sports, entertainment), low-effort/hashtag-only.
+- Hashtags are normal on LinkedIn and are not penalized by themselves. Only posts with no real commentary beyond hashtags count as hashtag-only.
+
 **Heuristic pre-filter (free, instant)**
-- Engagement bait: "agree?", "thoughts?", "comment YES", "DM me", "follow for more".
-- Hype: "thrilled to announce", "humbled", "🚀", "game-changer".
-- Hashtag spam (>5), link-in-comments, webinar/signup promos, reposts, near-empty text.
-- Clear-cut cases resolve locally; ambiguous ones go to Jev.
+- Job/referral, technical, resource, advice, self-improvement, case-study, industry, personal-lesson, and discussion signals resolve locally when specific enough.
+- Engagement bait, off-topic, humor, ads, achievements without a lesson, generic stories, generic motivation, and near-empty/hashtag-only posts resolve locally when clear-cut.
+- Ambiguous posts go to Winnow for the full taxonomy.
 
 **Scoring**
+- The post type is the main prior; the model's quality rating and signals refine it.
 - Queue with max 2 concurrent, 300ms visibility debounce, retry with backoff.
 - Cache by URN + text hash in IndexedDB (scrolling back is free).
 - Threshold default 35, adjustable 0–100 in popup.
 
 **Blur UX**
-- Card gets `filter: blur(8px)` + overlay: `Low value · 23/100 · click to reveal`.
+- Card gets `filter: blur(8px)` + overlay: `Low value · 23/100 · advertisement · click to reveal`.
 - Click reveals for the session; score badge stays visible.
 - Popup: on/off toggle, threshold slider, "pause on this site", today's stats (scored / blurred / revealed).
 
@@ -236,10 +250,10 @@ Authorization: Bearer <jev_key>
 | Phase | Work | Est. |
 |---|---|---|
 | **0 — Scaffold** ✅ | WXT + React + TS init, manifest, typed messaging + storage, popup + options shells, lint/format. Loads unpacked. | 0.5 d |
-| **1 — AI layer** ✅ | Jev client + mock mode, Sarvam fallback, IndexedDB cache, concurrency queue, confidence routing, "Test connection" in options. | 1 d |
-| **2 — LinkedIn** ✅ | Post detection, extraction, heuristics, scoring queue, blur overlay + reveal, threshold, pause, stats. Works fully on mock Jev. | 1.5 d |
+| **1 — AI layer** ✅ | AI client + mock mode, Sarvam fallback, IndexedDB cache, concurrency queue, confidence routing, "Test connection" in options. | 1 d |
+| **2 — LinkedIn** ✅ | Post detection, extraction, heuristics, scoring queue, blur overlay + reveal, threshold, pause, stats. Works fully in mock mode. | 1.5 d |
 | **3 — Gmail auth + read** ✅ | OAuth via `launchWebAuthFlow`, token cache + silent re-auth, Gmail REST wrapper, metadata fetch. Options shows connected account. | 1 d |
-| **4 — Gmail classify + label** ✅ | Pre-filter, Jev classification, label creation, `batchModify`, idempotency, priority panel. | 1.5 d |
+| **4 — Gmail classify + label** ✅ | Pre-filter, AI classification, label creation, `batchModify`, idempotency, priority panel. | 1.5 d |
 | **5 — Unsubscribe + cleanup** ✅ | `List-Unsubscribe` parsing, one-click POST + optional permission, mailto fallback, bulk-sender aggregation, archive-all with confirmation. | 1 d |
 | **6 — Polish** ✅ | Error/rate-limit states, cache eviction, consent notice, README + manual test checklist. | 1 d |
 | **7 — Generative identity** ✅ | Seeded signal marks, aurora headers, category hues, score rings, sender avatars, LinkedIn overlay redesign. | 1 d |
@@ -258,14 +272,14 @@ Authorization: Bearer <jev_key>
 | LinkedIn ToS | Read-only DOM, local blur, no automated actions or scraping to a server. Low risk, documented. |
 | Per-post AI cost/latency | Heuristics pre-filter, IndexedDB cache, 2-way concurrency, visibility debounce, threshold. |
 | Unsubscribe POST needs broad host access | `optional_host_permissions` requested at click time, not install time. |
-| Jev API not live | Mock mode + typed interface; real client is a drop-in swap. |
+| Custom API not live | Mock mode + typed interface; real client is a drop-in swap. |
 | Sending email content to a third party | One-time consent notice; only metadata + snippet sent, never full bodies; no analytics. |
 
 ---
 
 ## 8. Open questions (blocking sign-off)
 
-1. **Jev API contract** — approve the proposed endpoints above, or paste the real docs (base URL, auth header, request/response shapes, rate limits).
+1. **Custom API contract** — approve the proposed endpoints above, or paste the real docs (base URL, auth header, request/response shapes, rate limits).
 2. **Google Cloud** — confirm OAuth client type **Web application** and that scope `gmail.modify` is acceptable (read + label changes, no send).
 3. **Sarvam fallback model** — default to `deepseekv4.1-flash-1017` at `https://api.sarvam.ai/v2/chat/completions` (matches your OpenCode config)? Or a different Sarvam model?
 4. **Auto-archive** — confirm v1 is label-only (no destructive actions). Recommended.

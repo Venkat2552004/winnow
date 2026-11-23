@@ -4,6 +4,6 @@ export default defineContentScript({
   matches: ['https://mail.google.com/*'],
   main() {
     document.documentElement.dataset.jevGmail = 'loaded';
-    console.info('[jev] Gmail content script loaded');
+    console.info('[winnow] Gmail content script loaded');
   },
 });

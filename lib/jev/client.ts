@@ -3,11 +3,14 @@ import { withRetry } from '../queue';
 import { clamp, errorMessage } from '../types';
 import { heuristicEmailClassification } from '../gmail/heuristics';
 import { heuristicPostScore } from '../linkedin/heuristics';
+import { normalizePostLabels } from '../linkedin/taxonomy';
 import { createRoarJevClient } from '../roar/client';
 import { isRoarBaseUrl, ROAR_BASE_URL } from '../roar/config';
 import {
   CATEGORY_PRIORITY_FLOOR,
-  isEmailCategory,
+  resolveEmailCategory,
+  type ClassifyOptions,
+  type EmailCategory,
   type EmailClassification,
   type EmailInput,
   type PostInput,
@@ -24,7 +27,7 @@ export interface JevConfig {
 
 export interface JevClient {
   readonly mode: 'mock' | 'live';
-  classifyEmail(input: EmailInput): Promise<EmailClassification>;
+  classifyEmail(input: EmailInput, options?: ClassifyOptions): Promise<EmailClassification>;
   scorePost(input: PostInput): Promise<PostScore>;
 }
 
@@ -44,18 +47,18 @@ async function postJson<T>(url: string, apiKey: string, body: unknown): Promise<
     });
   } catch (error) {
     throw new HttpError(
-      'Jev API',
+      'Custom API',
       0,
-      `Jev API is unreachable (${errorMessage(error)})`,
+      `Custom API is unreachable (${errorMessage(error)})`,
     );
   }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
     throw new HttpError(
-      'Jev API',
+      'Custom API',
       response.status,
-      describeHttpError('Jev API', response.status, detail),
+      describeHttpError('Custom API', response.status, detail),
     );
   }
   return (await response.json()) as T;
@@ -68,9 +71,12 @@ function request<T>(url: string, apiKey: string, body: unknown): Promise<T> {
   });
 }
 
-function normalizeEmail(raw: unknown): EmailClassification {
+function normalizeEmail(
+  raw: unknown,
+  allowed?: readonly EmailCategory[],
+): EmailClassification {
   const value = (raw ?? {}) as Partial<EmailClassification>;
-  const category = isEmailCategory(value.category) ? value.category : 'other';
+  const category = resolveEmailCategory(value.category, allowed);
   return {
     category,
     priority: clamp(
@@ -89,7 +95,7 @@ function normalizePost(raw: unknown): PostScore {
   return {
     score: clamp(Number.isFinite(value.score) ? Number(value.score) : 50, 0, 100),
     confidence: clamp(Number.isFinite(value.confidence) ? Number(value.confidence) : 0, 0, 1),
-    labels: Array.isArray(value.labels) ? value.labels.filter((l): l is string => typeof l === 'string') : [],
+    labels: normalizePostLabels(value.labels),
     reason: typeof value.reason === 'string' ? value.reason : '',
     source: 'jev',
   };
@@ -99,11 +105,12 @@ function createLiveClient(config: JevConfig): JevClient {
   const base = config.baseUrl.replace(/\/+$/, '');
   return {
     mode: 'live',
-    async classifyEmail(input) {
+    async classifyEmail(input, options) {
       const raw = await request<unknown>(`${base}/v1/classify/email`, config.apiKey, {
         message: input,
+        categories: options?.categories,
       });
-      return normalizeEmail(raw);
+      return normalizeEmail(raw, options?.categories);
     },
     async scorePost(input) {
       const raw = await request<unknown>(`${base}/v1/score/post`, config.apiKey, {
@@ -117,8 +124,8 @@ function createLiveClient(config: JevConfig): JevClient {
 function createMockClient(): JevClient {
   return {
     mode: 'mock',
-    async classifyEmail(input) {
-      const heuristic = heuristicEmailClassification(input);
+    async classifyEmail(input, options) {
+      const heuristic = heuristicEmailClassification(input, options?.categories);
       if (heuristic) {
         return {
           ...heuristic,
@@ -140,7 +147,7 @@ function createMockClient(): JevClient {
       return {
         score: 55,
         confidence: 0.4,
-        labels: [],
+        labels: ['other'],
         reason: 'Mock scorer: no signals matched',
         source: 'mock',
       };

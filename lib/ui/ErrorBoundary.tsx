@@ -17,7 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error('[jev] UI error:', error, info.componentStack);
+    console.error('[winnow] UI error:', error, info.componentStack);
   }
 
   override render(): ReactNode {

@@ -1,9 +1,9 @@
-# Jev
+# Winnow
 
 A Chrome extension that does two things:
 
 1. **Gmail organizer** — auto-labels recent mail by category, builds a priority view, and helps you unsubscribe from and archive bulk senders.
-2. **LinkedIn de-slop** — scores feed posts for value and blurs the low-value ones behind a click-to-reveal overlay.
+2. **LinkedIn de-slop** — scores feed posts for value and blurs the low-value ones behind a click-to-reveal overlay. It keeps jobs, technical breakdowns, actionable advice, self-improvement, resources, industry insight, case studies, personal lessons, and substantive discussion. It blurs ads, achievements without a lesson, generic stories, engagement bait, memes, off-topic posts, and low-effort posts.
 
 Both use the **Roar AI gateway** (OpenAI-compatible, via the official OpenAI SDK) as the primary classifier, with **Sarvam** as a fallback for low-confidence results. **Mock mode** uses deterministic local heuristics, so every feature works end to end without a network call.
 
@@ -17,14 +17,14 @@ Full design and roadmap: [`docs/PLAN.md`](docs/PLAN.md). Visual system: [`docs/D
 | 1 — AI layer | ✅ done (mock + live client, fallback, cache, queue) |
 | 2 — LinkedIn blur | ✅ done (detection, scoring, blur overlay, stats) |
 | 3 — Gmail auth + read | ✅ done (OAuth, token refresh, metadata fetch) |
-| 4 — Gmail classify + label | ✅ done (preview, Jev/* labels, batchModify, priority inbox) |
+| 4 — Gmail classify + label | ✅ done (preview, category labels, batchModify, priority inbox) |
 | 5 — Unsubscribe + cleanup | ✅ done (List-Unsubscribe, one-click POST, bulk archive/trash) |
 | 6 — Polish | ✅ done (retries, cache eviction, onboarding, icons, docs) |
 | 7 — Generative identity | ✅ done (seeded signals, auroras, avatars, score rings) |
 
 ## Design
 
-Jev's look is **procedural**: every waveform, gradient, avatar, and score ring is derived from a stable seed — a message ID, sender email, post URN, or section name. The same item always draws the same mark, with no images to ship and no model call.
+Winnow's look is **procedural**: every waveform, gradient, avatar, and score ring is derived from a stable seed — a message ID, sender email, post URN, or section name. The same item always draws the same mark, with no images to ship and no model call.
 
 - **Signal marks** — a seeded five-bar waveform identifies each feature.
 - **Auroras** — seeded mesh gradients behind the popup and settings headers.
@@ -58,7 +58,7 @@ Open the extension's **Settings** page.
 
 ### AI
 
-Jev uses the **Roar AI gateway** by default through the official OpenAI SDK. The `jev` model is an **evaluation** model, so Jev calls `POST /v1/evaluate` with typed questions instead of chat completions.
+Winnow uses the **Roar AI gateway** by default through the official OpenAI SDK. The `jev` model is an **evaluation** model, so Winnow calls `POST /v1/evaluate` with typed questions instead of chat completions.
 
 1. Add your key to `.env`:
    ```
@@ -74,7 +74,7 @@ Jev uses the **Roar AI gateway** by default through the official OpenAI SDK. The
 5. Test it from the extension: **Popup → Developer tools → Test AI**. The toast shows the provider, model, and a real score.
 
 - **Use Roar AI gateway** — when on, the extension always uses `ROAR_API_KEY` and `ROAR_BASE_URL` from `.env`, even if older settings still contain a custom URL or key. Turn it off to use the custom fields below.
-- **Browser-origin block** — Roar rejects requests that carry an `Origin: chrome-extension://…` header. Jev ships a `declarativeNetRequest` rule (`public/rules/roar-headers.json`) that removes `Origin` and `Referer` for `api.roar-ai.com`. Reload the extension after updating so the rule is installed.
+- **Browser-origin block** — Roar rejects requests that carry an `Origin: chrome-extension://…` header. Winnow ships a `declarativeNetRequest` rule (`public/rules/roar-headers.json`) that removes `Origin` and `Referer` for `api.roar-ai.com`. Reload the extension after updating so the rule is installed.
 - **Mock mode** — turn on to use local heuristics without calling the gateway. This is an explicit choice; a Roar key in `.env` no longer silently leaves mock mode on.
 - **Older installs** — if a previous version stored `mock: true` by default, the first load after this update flips it to live when a Roar key is present. Toggle **Mock mode** on and off if you want to override that.
 - **Sarvam fallback** — base URL, model, and key. Used only when the primary result is low confidence.
@@ -85,14 +85,14 @@ Jev uses the **Roar AI gateway** by default through the official OpenAI SDK. The
 1. Create a Google Cloud project and enable the **Gmail API**.
 2. Configure the OAuth consent screen (External, Testing) and add your Gmail address as a test user.
 3. Create an OAuth client of type **Web application**.
-4. Add this authorized redirect URI (the exact value is also shown in Jev's settings):
+4. Add this authorized redirect URI (the exact value is also shown in Winnow's settings):
    ```
    https://YOUR_EXTENSION_ID.chromiumapp.org/
    ```
-5. Paste the **client ID** into Jev → Gmail → OAuth client ID.
+5. Paste the **client ID** into Winnow → Gmail → OAuth client ID.
 6. Click **Connect Gmail** and approve the `gmail.modify` scope.
 
-The client secret is not needed — Jev uses the implicit flow.
+The client secret is not needed — Winnow uses the implicit flow.
 
 ### LinkedIn
 
@@ -102,27 +102,57 @@ The client secret is not needed — Jev uses the implicit flow.
 
 Keys are stored in `chrome.storage.local` and never committed. `.env` is optional and only provides build-time defaults.
 
-## Using Jev
+## Using Winnow
 
 ### Gmail organizer
 
 1. Settings → Gmail → **Preview classification** — classifies recent mail without writing anything.
 2. Review the category and priority score for each message.
-3. **Apply labels** — creates `Jev/*` labels and applies them with `batchModify`. Re-running only changes what differs.
+3. **Apply labels** — creates the selected category labels and applies them with `batchModify`. Re-running only changes what differs.
 
 The popup shows the top priority mail (score ≥ your threshold) with a direct link into Gmail.
+
+### Email labels
+
+Settings → **Email labels** lets you choose a preset and fine-tune the labels Winnow creates:
+
+- **Everyday** — all labels, balanced priority. Good for a normal personal inbox.
+- **Founder / operator** — all labels, with jobs, signups, alerts, and finance surfaced earlier.
+- **Job seeker** — jobs, recruiters, signups, alerts, and the important categories.
+- **Minimal** — only the labels that usually need attention.
+- **Inbox zero** — all labels, with aggressive cleanup for low-value mail.
+
+Labels are flat by default (`Security`, `Finance/Bank`, `Offers`, …). Add a prefix if you want them grouped under a parent label. Winnow applies one primary category per email, plus an optional `Priority` label at or above your threshold. Disabled categories are never created or applied.
 
 ### Unsubscribe & cleanup
 
 - **Scan senders** — groups recent mail by sender, keeping only senders with a `List-Unsubscribe` header.
 - **Unsubscribe selected** — sends RFC 8058 one-click POSTs directly, or opens the unsubscribe link / mailto in a background tab.
 - **Archive after unsubscribe** — optionally removes that sender's scanned messages from the inbox.
-- **Preview cleanup** — finds promotions, newsletters, and notifications older than the cleanup age. Starred and important mail is never included.
+- **Preview cleanup** — finds offers, newsletters, alerts, and other cleanup-eligible labels older than the cleanup age. Starred and important mail is never included.
 - **Archive / Trash** — removes `INBOX` or moves to Trash. Trash asks for confirmation.
 
 ### LinkedIn
 
-Scroll the feed. Posts scoring below the threshold are blurred behind a reveal card showing the score ring, the reason, and a **Reveal post** button. After revealing, a compact `Jev <score>` badge stays on the post. The popup shows today's scored / blurred / revealed counts.
+Scroll the feed. Posts scoring below the threshold are blurred behind a reveal card showing the score ring, the post type, the reason, and a **Reveal post** button. After revealing, a compact `Winnow <score>` badge stays on the post. The popup shows today's scored / blurred / revealed counts.
+
+Winnow classifies each post into one of these types before scoring it:
+
+| Keep visible | Blur |
+|---|---|
+| Job opportunity / referral | Advertisement |
+| Technical breakdown | Achievement without a lesson |
+| Actionable advice / how-to | Generic story |
+| Self-improvement | Engagement bait |
+| Resource / tool / template | Humor / meme / funny video |
+| Industry insight | Off-topic (politics, sports, entertainment) |
+| Case study | Low-effort / hashtag-only |
+| Personal lesson with a takeaway | |
+| Substantive discussion | |
+
+Hashtags are common on LinkedIn and are not penalized by themselves. A post is only treated as hashtag-only when there is no real commentary beyond the hashtags.
+
+Media-only posts with no commentary are left visible because Winnow cannot judge video or image content. Posts with captions are classified normally.
 
 ## Scripts
 
@@ -149,7 +179,7 @@ lib/
   llm/                 shared prompts and Sarvam fallback client
   gmail/               API, auth, labels, organizer, unsubscribe, cleanup
   linkedin/            detection, extraction, heuristics, overlay
-  pipeline.ts          heuristic → Jev → Sarvam routing
+  pipeline.ts          heuristic → Winnow → Sarvam routing
   cache.ts             IndexedDB cache with eviction
   queue.ts             concurrency + retry
   http.ts              HTTP error classification
@@ -159,6 +189,8 @@ lib/
 scripts/
   test-roar.mjs        one-shot gateway smoke test
 ```
+
+> The internal `lib/jev/` directory, storage keys, and message types still use `jev` so existing settings and Gmail tokens survive the rename.
 
 ## Privacy
 
@@ -172,7 +204,7 @@ Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the
    ```bash
    npm run build
    ```
-   Then `chrome://extensions` → reload Jev → reload the LinkedIn tab.
+   Then `chrome://extensions` → reload Winnow → reload the LinkedIn tab.
 2. **Turn on the debug overlay.** Settings → LinkedIn → *Debug overlay*. A pill appears bottom-right showing `posts · scored · blurred · revealed`.
 3. **Popup → Developer tools → Diagnose.** Reports how many post roots were found and the last error.
 4. **Popup → Developer tools → Test blur.** Blurs the first post with a fake score.
@@ -180,7 +212,7 @@ Email metadata (sender, subject, snippet) and LinkedIn post text are sent to the
    - Test blur fails → the page selectors need updating (`lib/linkedin/dom.ts`).
 5. **Popup → Developer tools → Test AI.** Sends one real email and one real post to the configured provider. The toast shows the provider, model, category, priority, and post score — or the exact error.
 6. **Clear stale scores.** Popup → **Clear cache**. This also tells the open LinkedIn tab to drop its in-memory scores and re-scan. Old scores are cached for 24 hours; the cache key is versioned so a scoring change invalidates them automatically.
-7. **Check the console** for `[jev]` logs (enable debug first).
+7. **Check the console** for `[winnow]` logs (enable debug first).
 
 Leave **Mock mode** on to use local heuristics. Sarvam is still used for posts the local heuristics can't confidently judge.
 
@@ -188,20 +220,20 @@ Leave **Mock mode** on to use local heuristics. Sarvam is still used for posts t
 
 | Error | Fix |
 |---|---|
-| `redirect_uri_mismatch` | Copy the redirect URI from Jev's settings into Google Cloud exactly — the extension ID must match. |
+| `redirect_uri_mismatch` | Copy the redirect URI from Winnow's settings into Google Cloud exactly — the extension ID must match. |
 | `invalid_client` | Client ID typo, or the client isn't type **Web application**. |
 | `access_denied` | Your Gmail isn't in **Test users** on the consent screen. |
 | `Gmail API has not been used` | Enable **Gmail API** in APIs & Services → Library. |
 | `Gmail session expired` | Click **Connect Gmail** again — silent refresh failed. |
-| `Gmail API rate limit reached` | Wait a moment and retry; Jev already retries once automatically. |
+| `Gmail API rate limit reached` | Wait a moment and retry; Winnow already retries once automatically. |
 | `Could not reach the Gmail API` | Reload the extension so the new host permissions apply. |
 
 ### AI errors
 
-- **Roar AI unreachable / rate limited** — Jev retries once, then falls back to local heuristics (and Sarvam if configured). Check `ROAR_API_KEY` and the gateway URL.
+- **Roar AI unreachable / rate limited** — Winnow retries once, then falls back to local heuristics (and Sarvam if configured). Check `ROAR_API_KEY` and the gateway URL.
 - **Sarvam rejected the credentials** — verify the key and model in Settings.
 - **Roar AI rejected the credentials** — check `ROAR_API_KEY` in `.env`, then rebuild the extension.
-- **403 "This request came from a web page (origin chrome-extension://…)"** — the `Origin`-stripping rule is missing or not active. Rebuild, then reload Jev in `chrome://extensions` so the `declarativeNetRequest` permission and rule are installed. If it persists, check `chrome://extensions` → Jev → Errors for an invalid rule.
+- **403 "This request came from a web page (origin chrome-extension://…)"** — the `Origin`-stripping rule is missing or not active. Rebuild, then reload Winnow in `chrome://extensions` so the `declarativeNetRequest` permission and rule are installed. If it persists, check `chrome://extensions` → Winnow → Errors for an invalid rule.
 - **Everything scores 55** — mock mode is on and no heuristic matched. Turn off **Mock mode** to use the gateway.
 - **Everything scores 50 / "Scoring unavailable"** — the gateway call failed and no heuristic matched. Open **Popup → Developer tools → Test AI** to see the exact error, then **Clear cache** and reload the LinkedIn tab. Failures are no longer cached, so the next scroll retries.
 - **Scores look stale after changing the model** — the cache key is versioned, but an open LinkedIn tab keeps scores in memory. Click **Clear cache** or reload the tab.

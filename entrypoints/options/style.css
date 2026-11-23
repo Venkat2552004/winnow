@@ -27,6 +27,104 @@ body {
   border-radius: var(--radius-lg);
 }
 
+/* ---------- email label presets ---------- */
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.preset-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.preset-card:hover {
+  border-color: var(--border-strong);
+}
+
+.preset-card--active {
+  border-color: var(--accent);
+  background: hsl(220 90% 60% / 0.1);
+  box-shadow: 0 0 0 3px hsl(220 90% 60% / 0.12);
+}
+
+.preset-card__name {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.preset-card__desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.preset-card__meta {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.label-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 6px;
+}
+
+.label-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  cursor: pointer;
+  font-size: 12px;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.label-chip:hover {
+  border-color: var(--border-strong);
+}
+
+.label-chip--on {
+  border-color: hsl(220 80% 60% / 0.45);
+  background: hsl(220 80% 60% / 0.1);
+}
+
+.label-chip input {
+  width: auto;
+  margin: 0;
+}
+
+.label-chip code {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+
 @media (max-width: 560px) {
   body {
     padding: 16px 12px 56px;

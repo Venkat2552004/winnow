@@ -33,7 +33,7 @@ export function SignalMark({
       height={size}
       viewBox={`0 0 ${size} ${size}`}
       role="img"
-      aria-label={title ?? 'Jev signal'}
+      aria-label={title ?? 'Winnow signal'}
       style={{ overflow: 'visible', flex: '0 0 auto' }}
     >
       {values.map((value, index) => {

@@ -1,14 +1,23 @@
 import OpenAI from 'openai';
 import type { JevClient, JevConfig } from '../jev/client';
 import {
+  ALL_CATEGORIES,
   CATEGORY_PRIORITY_FLOOR,
-  isEmailCategory,
+  resolveEmailCategory,
+  type ClassifyOptions,
   type EmailCategory,
   type EmailClassification,
   type EmailInput,
   type PostInput,
   type PostScore,
 } from '../jev/types';
+import {
+  isPostType,
+  POST_TYPE_BASE,
+  POST_TYPE_DESCRIPTION,
+  POST_TYPE_LABEL,
+  type PostType,
+} from '../linkedin/taxonomy';
 import { clamp } from '../types';
 import { ROAR_BASE_URL } from './config';
 import {
@@ -41,30 +50,34 @@ export function createRoarSdk(config: RoarConfig): OpenAI {
 }
 
 const EMAIL_CATEGORIES: Record<EmailCategory, string> = {
-  action_required:
-    'A person or system needs the user to reply, approve, sign, pay, or complete a task',
-  personal: 'A real person writing to the user socially or personally, not a bulk message',
+  security_alert:
+    'A login alert, password reset, verification code, suspicious activity, or security warning',
   bank_statement: 'A bank, card, or brokerage statement, balance, or transaction summary',
   invoice: 'A bill, invoice, or payment request with an amount due',
-  receipt: 'A receipt, order confirmation, or shipping confirmation for a purchase',
-  security_alert: 'A login alert, password reset, suspicious activity, or security warning',
   travel: 'A flight, hotel, train, rental, or trip itinerary or booking',
-  legal: 'A contract, legal notice, policy change, or compliance matter',
+  legal: 'A contract, legal notice, policy change, insurance, or government/tax matter',
+  action_required:
+    'A person or system needs the user to reply, approve, sign, or complete a task',
+  jobs: 'A job alert, recruiter message, application update, interview request, or hiring notice',
+  personal: 'A real person writing to the user socially or personally, not a bulk message',
+  payment: 'A payment confirmation, autopay notice, refund, or subscription charge',
+  shopping: 'An order confirmation, shipping update, delivery notice, return, or purchase receipt',
+  offers: 'A marketing offer, sale, discount, promo code, product launch, or promotional email',
+  signup: 'A welcome email, onboarding message, account activation, or trial reminder',
+  social: 'A social media notification, mention, follow, comment, like, or connection request',
+  alerts: 'An automated app, service, system, or monitoring notification that is not marketing',
   newsletter: 'A recurring newsletter, digest, or editorial email',
-  notification: 'An automated product, app, or service notification that is not marketing',
-  promotion: 'A marketing offer, sale, product launch, or promotional email',
   other: 'Anything that does not fit the categories above',
 };
 
 const URGENCY_RUNGS = ['ignore', 'read later', 'read today', 'act now'];
 
 const QUALITY_RUNGS = [
-  'pure engagement bait: asks for likes, comments, or shares, or uses a cliffhanger with no substance',
-  'thin or promotional: mostly an ad, announcement, or platitude with little to learn',
-  'low substance: a personal update or generic advice with no new information',
-  'ordinary: a normal professional post with a clear point but nothing novel',
-  'useful: shares a concrete lesson, result, or resource the reader can apply',
-  'insightful: offers a non-obvious idea, data, or first-hand experience with specifics',
+  'no value: pure noise, bait, or off-topic',
+  'low value: generic, promotional, or entertaining but not useful',
+  'some value: a clear point but little specificity or actionability',
+  'useful: a concrete lesson, resource, or opportunity the reader can use',
+  'high value: specific, actionable, and directly relevant to work or career',
   'exceptional: original analysis or hard-won detail that changes how the reader thinks',
 ];
 
@@ -78,13 +91,14 @@ interface PostSignal {
 
 /**
  * Positive signals raise the score, negative signals lower it. Positive
- * adjustments are capped so the model's quality rating stays the main driver.
+ * adjustments are capped so the post type and quality rating stay the main
+ * drivers.
  */
 const POST_SIGNALS: PostSignal[] = [
   {
-    label: 'substance',
+    label: 'specific_details',
     instructions:
-      'Does the post contain a concrete, verifiable claim, data point, result, or first-hand experience with specifics?',
+      'Does the post include concrete details such as numbers, tools, names, steps, or outcomes?',
     weight: 6,
     threshold: 0.6,
   },
@@ -92,80 +106,132 @@ const POST_SIGNALS: PostSignal[] = [
     label: 'actionable',
     instructions:
       'Can the reader apply a specific method, lesson, or next step from this post?',
-    weight: 5,
-    threshold: 0.6,
-  },
-  {
-    label: 'insightful',
-    instructions:
-      'Does the post offer a non-obvious idea or a genuinely new perspective, not just generic advice?',
     weight: 6,
     threshold: 0.6,
   },
   {
-    label: 'technical',
+    label: 'evidence',
     instructions:
-      'Does the post contain substantive technical detail rather than vague claims?',
+      'Does the post support its claims with data, examples, or first-hand experience?',
+    weight: 5,
+    threshold: 0.6,
+  },
+  {
+    label: 'original_insight',
+    instructions:
+      'Does the post offer a non-obvious idea or a genuinely new perspective, not just generic advice?',
+    weight: 5,
+    threshold: 0.6,
+  },
+  {
+    label: 'useful_links',
+    instructions:
+      'Does the post point to a useful resource, tool, template, or guide?',
     weight: 4,
     threshold: 0.6,
   },
   {
-    label: 'news',
+    label: 'technical_depth',
     instructions:
-      'Does the post report a specific, timely development with a date, version, or concrete event?',
-    weight: 3,
+      'Does the post contain substantive technical detail rather than vague claims?',
+    weight: 5,
     threshold: 0.6,
   },
   {
-    label: 'personal_story',
+    label: 'hiring_specifics',
     instructions:
-      'Does the post tell a specific personal story with a clear lesson, rather than a generic anecdote?',
-    weight: 2,
+      'Does the post include a specific role, company, location, or application path?',
+    weight: 5,
     threshold: 0.6,
   },
   {
-    label: 'engagement_bait',
-    instructions: 'Does the post ask for likes, comments, shares, or tags instead of making a point?',
-    weight: -14,
+    label: 'clear_takeaway',
+    instructions:
+      'Does the post end with a clear, transferable lesson or next step?',
+    weight: 4,
+    threshold: 0.6,
+  },
+  {
+    label: 'vague',
+    instructions: 'Is the post mostly generic claims without specifics?',
+    weight: -8,
+    threshold: 0.6,
   },
   {
     label: 'hype',
     instructions: 'Does the post use inflated, breathless, or buzzword-heavy language?',
-    weight: -9,
-  },
-  {
-    label: 'promotional',
-    instructions: 'Does the post primarily advertise a product, service, event, or the author?',
-    weight: -11,
-  },
-  {
-    label: 'hashtag_spam',
-    instructions: 'Is the post stuffed with hashtags or keyword tags?',
     weight: -7,
   },
   {
-    label: 'repost',
-    instructions: 'Does the post mostly repeat someone else’s content without adding insight?',
+    label: 'promotional',
+    instructions: 'Is the post mainly advertising a product, service, event, or the author?',
+    weight: -10,
+  },
+  {
+    label: 'engagement_bait',
+    instructions:
+      'Does the post explicitly ask for likes, comments, shares, follows, tags, or votes?',
+    weight: -12,
+  },
+  {
+    label: 'off_topic',
+    instructions:
+      'Is the post about politics, sports, entertainment, religion, or personal life with no professional relevance?',
+    weight: -12,
+  },
+  {
+    label: 'humor_only',
+    instructions:
+      'Is the post mainly a joke, meme, or funny video with little professional value?',
+    weight: -8,
+  },
+  {
+    label: 'no_text',
+    instructions: 'Does the post have almost no text to judge?',
+    weight: -10,
+  },
+  {
+    label: 'hashtag_only',
+    instructions:
+      'Is the post essentially only hashtags with no real commentary? Hashtags are common on LinkedIn; only flag this when there is no substantive text.',
+    weight: -10,
+  },
+  {
+    label: 'repost_without_commentary',
+    instructions: 'Is this a reshare with no added insight or commentary?',
+    weight: -8,
+  },
+  {
+    label: 'generic_motivation',
+    instructions:
+      'Is the post generic motivation or inspiration without a concrete takeaway?',
+    weight: -8,
+  },
+  {
+    label: 'achievement_only',
+    instructions:
+      'Is the post only an achievement announcement with no useful lesson?',
     weight: -6,
   },
   {
-    label: 'thin_content',
-    instructions: 'Does the post say very little beyond a platitude or a one-liner?',
-    weight: -9,
-  },
-  {
-    label: 'viral_slop',
-    instructions: 'Does the post look optimised for reach rather than usefulness?',
-    weight: -11,
+    label: 'low_effort_question',
+    instructions:
+      'Is the post a one-line question or poll with no context or substance?',
+    weight: -8,
   },
 ];
 
-function emailQuestions(): Record<string, EvaluateQuestion> {
+function emailQuestions(allowed?: readonly EmailCategory[]): Record<string, EvaluateQuestion> {
+  const categories = allowed?.length ? allowed : ALL_CATEGORIES;
+  const criteria = Object.fromEntries(
+    categories.map((category) => [category, EMAIL_CATEGORIES[category]]),
+  );
+
   return {
     category: {
       type: 'choice',
       instructions: 'What kind of email is this? Pick the single best category.',
-      criteria: EMAIL_CATEGORIES,
+      criteria,
     },
     urgency: {
       type: 'score',
@@ -189,10 +255,15 @@ function emailQuestions(): Record<string, EvaluateQuestion> {
 
 function postQuestions(): Record<string, EvaluateQuestion> {
   const questions: Record<string, EvaluateQuestion> = {
+    post_type: {
+      type: 'choice',
+      instructions: 'What kind of LinkedIn post is this? Pick the single best type.',
+      criteria: POST_TYPE_DESCRIPTION,
+    },
     quality: {
       type: 'score',
       instructions:
-        'How useful is this post to a busy professional? Use the full scale and do not default to the middle.',
+        'How useful is this post to a busy professional who only wants high-value content? Use the full scale and do not default to the middle.',
       criteria: QUALITY_RUNGS,
     },
   };
@@ -223,12 +294,13 @@ function emailReason(
   return `${category}${certainty}; priority: ${urgency}${suffix}.`;
 }
 
-function postReason(score: number, labels: string[]): string {
-  const signal = labels.length ? labels.join(', ') : 'no strong signals';
-  return `Rated ${Math.round(score)}/100; ${signal}.`;
+function postReason(postType: PostType, labels: string[]): string {
+  const type = POST_TYPE_LABEL[postType];
+  const signals = labels.filter((label) => label !== postType).slice(0, 3);
+  return `${type}${signals.length ? ` · ${signals.join(', ')}` : ''}.`;
 }
 
-/** Adapts Roar's evaluation endpoint to the Jev classifier interface. */
+/** Adapts Roar's evaluation endpoint to the Winnow classifier interface. */
 export function createRoarJevClient(config: JevConfig): JevClient {
   const client = createRoarSdk({
     apiKey: config.apiKey,
@@ -237,11 +309,12 @@ export function createRoarJevClient(config: JevConfig): JevClient {
 
   return {
     mode: 'live',
-    async classifyEmail(input: EmailInput) {
-      const response = await evaluate(client, input, emailQuestions());
+    async classifyEmail(input: EmailInput, options?: ClassifyOptions) {
+      const allowed = options?.categories?.length ? options.categories : undefined;
+      const response = await evaluate(client, input, emailQuestions(allowed));
       const answers = response.answers;
       const rawCategory = choiceOf(answers.category);
-      const category = isEmailCategory(rawCategory) ? rawCategory : 'other';
+      const category = resolveEmailCategory(rawCategory, allowed);
 
       const urgency = scorePercent(answers.urgency, URGENCY_RUNGS.length);
       // The category floor is the main driver. Urgency and flags can only add
@@ -278,30 +351,38 @@ export function createRoarJevClient(config: JevConfig): JevClient {
       const response = await evaluate(client, input, postQuestions());
       const answers = response.answers;
 
-      const base = scorePercent(answers.quality, QUALITY_RUNGS.length);
-      const labels: string[] = [];
+      const rawType = choiceOf(answers.post_type);
+      const postType = isPostType(rawType) ? rawType : 'other';
+      const base = POST_TYPE_BASE[postType];
+      const quality = scorePercent(answers.quality, QUALITY_RUNGS.length);
+
+      const signalLabels: string[] = [];
       let positive = 0;
       let negative = 0;
 
       for (const signal of POST_SIGNALS) {
         if (!isTrue(answers[signal.label], signal.threshold)) continue;
-        labels.push(signal.label);
+        signalLabels.push(signal.label);
         if (signal.weight > 0) positive += signal.weight;
         else negative += signal.weight;
       }
 
-      // Cap the upside so a few positive flags cannot turn an average post
+      // The post type is the main prior; the quality rating and signals refine
+      // it. Cap the upside so a few positive flags cannot turn an average post
       // into a perfect score. Negative signals are not capped.
-      const score = clamp(base + Math.min(positive, 12) + negative, 0, 100);
-
-      // Put the strongest negative signal first: the overlay shows labels[0]
-      // and blurred posts are the ones where the downside matters most.
-      const weightOf = (label: string): number =>
-        POST_SIGNALS.find((signal) => signal.label === label)?.weight ?? 0;
-      labels.sort((a, b) => weightOf(a) - weightOf(b));
+      const score = clamp(
+        base * 0.7 + quality * 0.3 + Math.min(positive, 12) + negative,
+        0,
+        100,
+      );
+      const labels = [postType, ...signalLabels.filter((label) => label !== postType)];
 
       const confidence = clamp(
-        Math.max(answerConfidence(answers.quality), 0.5),
+        Math.max(
+          choiceProbability(answers.post_type, postType),
+          answerConfidence(answers.quality),
+          0.5,
+        ),
         0,
         1,
       );
@@ -310,7 +391,7 @@ export function createRoarJevClient(config: JevConfig): JevClient {
         score: Math.round(score),
         confidence,
         labels,
-        reason: postReason(score, labels),
+        reason: postReason(postType, labels),
         source: 'roar',
       } satisfies PostScore;
     },

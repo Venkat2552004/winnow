@@ -1,17 +1,11 @@
-import type { EmailCategory } from '../jev/types';
+import { IMPORTANT_CATEGORIES } from '../jev/types';
 import type { Settings } from '../storage';
 import { batchModify } from './api';
 import { previewRecent } from './organizer';
 import type { CleanupCandidate, CleanupMode, CleanupPreview } from './types';
 
-/** Categories that are safe to bulk-archive once they age out. */
-const CLEANUP_CATEGORIES: ReadonlySet<EmailCategory> = new Set<EmailCategory>([
-  'promotion',
-  'newsletter',
-  'notification',
-]);
-
 const DAY_MS = 24 * 60 * 60 * 1000;
+const PROTECTED_CATEGORIES = new Set(IMPORTANT_CATEGORIES);
 
 function isProtected(labelIds: string[]): boolean {
   return labelIds.includes('STARRED') || labelIds.includes('IMPORTANT');
@@ -31,10 +25,12 @@ export async function previewCleanup(
   const rows = await previewRecent(token, settings);
   const olderThanDays = settings.gmail.cleanupOlderThanDays;
   const cutoff = Date.now() - olderThanDays * DAY_MS;
+  const cleanupCategories = new Set(settings.gmail.cleanupCategories);
 
   const candidates: CleanupCandidate[] = [];
   for (const row of rows) {
-    if (!CLEANUP_CATEGORIES.has(row.classification.category)) continue;
+    if (PROTECTED_CATEGORIES.has(row.classification.category)) continue;
+    if (!cleanupCategories.has(row.classification.category)) continue;
     if (isProtected(row.message.labelIds)) continue;
     if (!olderThan(row.message.date, cutoff)) continue;
 

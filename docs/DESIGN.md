@@ -1,6 +1,6 @@
 # Design system
 
-Jev's visual identity is **procedural**. Every mark, gradient, and avatar is derived from a seed string, so the same message, sender, or post always looks the same — no images to ship, no model call, no network.
+Winnow's visual identity is **procedural**. Every mark, gradient, and avatar is derived from a seed string, so the same message, sender, or post always looks the same — no images to ship, no model call, no network.
 
 ## Seeds
 
@@ -14,11 +14,11 @@ Seeds are stable identifiers:
 
 | Surface | Seed |
 |---|---|
-| Brand mark | `jev-brand` |
-| Popup header | `jev-popup-header` |
-| Settings header | `jev-options-header` |
-| Onboarding card | `jev-onboarding` |
-| Section marks | `jev-gmail`, `jev-linkedin`, `jev-api`, … |
+| Brand mark | `winnow-brand` |
+| Popup header | `winnow-popup-header` |
+| Settings header | `winnow-options-header` |
+| Onboarding card | `winnow-onboarding` |
+| Section marks | `winnow-gmail`, `winnow-linkedin`, `winnow-api`, … |
 | Priority mail | message ID (via category hue) |
 | Sender avatar | sender email |
 | Cleanup avatar | sender email |
@@ -61,7 +61,7 @@ Scores use a continuous ramp: `0` is red, `50` is amber, `100` is green. The num
 
 - **Popup** — aurora header, brand signal, status pills with semantic dots, priority rows with a category dot, short category label, and score ring.
 - **Settings** — aurora header and onboarding card, a signal mark per section, seeded glow on the Gmail, unsubscribe, and LinkedIn cards, sender and cleanup avatars.
-- **LinkedIn** — the blur overlay uses the post's seed for its glow and signal mark, the score for its ring and accent, and keeps the reason and a clear **Reveal post** action. After reveal, a compact `Jev <score>` badge stays on the post.
+- **LinkedIn** — the blur overlay uses the post's seed for its glow and signal mark, the score for its ring and accent, and keeps the reason and a clear **Reveal post** action. After reveal, a compact `Winnow <score>` badge stays on the post.
 
 ## Accessibility
 

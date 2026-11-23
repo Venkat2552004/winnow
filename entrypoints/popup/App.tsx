@@ -202,13 +202,13 @@ export default function App() {
   return (
     <div className="stack" style={{ gap: 12 }}>
       <header className="card app-header">
-        <Aurora seed="jev-popup-header" hue={228} />
+        <Aurora seed="winnow-popup-header" hue={228} />
         <div className="app-header__content">
           <div className="brand">
-            <SignalMark seed="jev-brand" size={28} bars={5} title="Jev" />
+            <SignalMark seed="winnow-brand" size={28} bars={5} title="Winnow" />
             <div>
-              <h1>Jev</h1>
-              <p className="brand__tag">Signal over noise</p>
+              <h1>Winnow</h1>
+              <p className="brand__tag">Keep the signal</p>
             </div>
           </div>
           <span className="badge">{version ? `v${version}` : 'dev'}</span>
@@ -218,7 +218,7 @@ export default function App() {
       <div className="card stack" style={{ gap: 8 }}>
         <StatusRow
           label="AI mode"
-          value={provider === 'roar' ? 'Roar live' : provider === 'jev' ? 'Jev live' : 'Mock'}
+          value={provider === 'roar' ? 'Roar live' : provider === 'jev' ? 'Custom live' : 'Mock'}
           hue={mode === 'live' ? 152 : 38}
         />
         <StatusRow
@@ -233,10 +233,10 @@ export default function App() {
         />
       </div>
 
-      <div className="card card--glow stack" style={vars(glowVars('jev-gmail', 212))}>
+      <div className="card card--glow stack" style={vars(glowVars('winnow-gmail', 212))}>
         <div className="row">
           <div className="section-head">
-            <SignalMark seed="jev-gmail" hue={212} size={20} bars={5} />
+            <SignalMark seed="winnow-gmail" hue={212} size={20} bars={5} />
             <div>
               <h2>Gmail organizer</h2>
               <p className="small muted">Auto-label and priority view</p>
@@ -310,10 +310,10 @@ export default function App() {
         </div>
       </div>
 
-      <div className="card card--glow stack" style={vars(glowVars('jev-linkedin', 194))}>
+      <div className="card card--glow stack" style={vars(glowVars('winnow-linkedin', 194))}>
         <div className="row">
           <div className="section-head">
-            <SignalMark seed="jev-linkedin" hue={194} size={20} bars={5} />
+            <SignalMark seed="winnow-linkedin" hue={194} size={20} bars={5} />
             <div>
               <h2>
                 LinkedIn de-slop{' '}
@@ -352,6 +352,9 @@ export default function App() {
               void patch({ linkedin: { threshold: Number(event.target.value) } })
             }
           />
+          <p className="small muted">
+            Keeps jobs, tech, advice, and resources. Blurs ads, bait, memes, and off-topic posts.
+          </p>
         </div>
 
         {stats && (

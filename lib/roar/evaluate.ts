@@ -8,7 +8,7 @@ import { ROAR_MODEL } from './config';
  * Roar's evaluation endpoint is not OpenAI-compatible: there is no `messages`
  * field and no completion. It takes typed questions and returns a probability
  * for each answer. The `jev` model is an evaluation model, so this is the
- * endpoint Jev's classifier uses.
+ * endpoint Winnow's classifier uses.
  */
 
 export type EvaluateQuestion =

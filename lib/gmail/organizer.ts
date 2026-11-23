@@ -1,6 +1,6 @@
 import {
-  CATEGORY_GMAIL_LABEL,
-  PRIORITY_LABEL,
+  gmailLabelFor,
+  priorityLabelFor,
   type EmailClassification,
   type EmailInput,
 } from '../jev/types';
@@ -50,8 +50,19 @@ function toInput(message: GmailMessageMeta): EmailInput {
 }
 
 function labelsFor(classification: EmailClassification, settings: Settings): string[] {
-  const labels = [CATEGORY_GMAIL_LABEL[classification.category]];
-  if (classification.priority >= settings.gmail.priorityThreshold) labels.push(PRIORITY_LABEL);
+  const labels: string[] = [];
+  if (
+    settings.gmail.autoLabel &&
+    settings.gmail.enabledCategories.includes(classification.category)
+  ) {
+    labels.push(gmailLabelFor(classification.category, settings.gmail.labelPrefix));
+  }
+  if (
+    settings.gmail.applyPriorityLabel &&
+    classification.priority >= settings.gmail.priorityThreshold
+  ) {
+    labels.push(priorityLabelFor(settings.gmail.labelPrefix));
+  }
   return labels;
 }
 
@@ -98,12 +109,13 @@ export async function previewRecent(token: string, settings: Settings): Promise<
   return rows;
 }
 
-/** Applies labels for the given rows, removing stale Jev labels we added before. */
+/** Applies labels for the given rows, removing stale Winnow labels we added before. */
 export async function applyLabels(
   token: string,
   rows: OrganizeRow[],
+  settings: Settings,
 ): Promise<OrganizeSummary> {
-  const labelIds = await ensureLabels(token);
+  const labelIds = await ensureLabels(token, settings);
   const previous = await readLabeledState();
   const next: LabeledState = { ...previous };
 
@@ -113,7 +125,7 @@ export async function applyLabels(
   let skipped = 0;
 
   for (const row of rows) {
-    const targetIds = row.labelNames
+    const targetIds = labelsFor(row.classification, settings)
       .map((name) => labelIds.get(name))
       .filter((id): id is string => Boolean(id));
     const previousIds = previous[row.message.id]?.labelIds ?? [];

@@ -291,8 +291,8 @@ function showBadge(element: HTMLElement, score: PostScore): void {
   const badge = document.createElement('span');
   badge.className = BADGE_CLASS;
   badge.style.setProperty('--jev-hue', String(Math.round(hue)));
-  badge.textContent = `Jev ${Math.round(score.score)}`;
-  badge.title = score.reason || 'Jev score';
+  badge.textContent = `Winnow ${Math.round(score.score)}`;
+  badge.title = score.reason || 'Winnow score';
   element.appendChild(badge);
 }
 
@@ -338,7 +338,7 @@ function buildOverlay(score: PostScore, reveal: () => void, seed: string): HTMLE
 
   const reason = document.createElement('div');
   reason.className = `${OVERLAY_CLASS}__reason`;
-  reason.textContent = score.reason || 'Filtered by Jev';
+  reason.textContent = score.reason || 'Filtered by Winnow';
 
   const cta = document.createElement('span');
   cta.className = `${OVERLAY_CLASS}__cta`;
@@ -396,7 +396,7 @@ export function unblurPost(element: HTMLElement): void {
   element.querySelector(`.${OVERLAY_CLASS}`)?.remove();
 }
 
-/** Removes every Jev artifact from a post. */
+/** Removes every Winnow artifact from a post. */
 export function resetPost(element: HTMLElement): void {
   element.classList.remove(BLUR_CLASS, SCORED_CLASS);
   element.querySelector(`.${OVERLAY_CLASS}`)?.remove();

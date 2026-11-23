@@ -1,3 +1,9 @@
+import {
+  DEFAULT_CLEANUP_CATEGORIES,
+  DEFAULT_ENABLED_CATEGORIES,
+  type EmailCategory,
+  type EmailLabelPresetId,
+} from './jev/types';
 import { deepMerge, type DeepPartial } from './types';
 
 export interface Settings {
@@ -27,6 +33,16 @@ export interface Settings {
     cleanupOlderThanDays: number;
     /** Archive a sender's existing mail after unsubscribing. */
     unsubscribeArchive: boolean;
+    /** Preset used to seed the label selection. */
+    labelPreset: EmailLabelPresetId;
+    /** Categories Winnow creates and applies. Empty means no category labels. */
+    enabledCategories: EmailCategory[];
+    /** Optional label prefix, e.g. "Winnow" → Winnow/Security. Empty means flat labels. */
+    labelPrefix: string;
+    /** Apply the priority label when priority >= priorityThreshold. */
+    applyPriorityLabel: boolean;
+    /** Categories eligible for bulk cleanup. */
+    cleanupCategories: EmailCategory[];
   };
   linkedin: {
     enabled: boolean;
@@ -67,6 +83,11 @@ export const DEFAULT_SETTINGS: Settings = {
     priorityThreshold: 70,
     cleanupOlderThanDays: 14,
     unsubscribeArchive: true,
+    labelPreset: 'everyday',
+    enabledCategories: [...DEFAULT_ENABLED_CATEGORIES],
+    labelPrefix: '',
+    applyPriorityLabel: true,
+    cleanupCategories: [...DEFAULT_CLEANUP_CATEGORIES],
   },
   linkedin: {
     enabled: true,
