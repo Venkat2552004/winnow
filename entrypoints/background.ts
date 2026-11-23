@@ -9,6 +9,7 @@ import {
   getConnectedEmail,
 } from '../lib/gmail/auth';
 import { applyCleanup, previewCleanup } from '../lib/gmail/cleanup';
+import { clearPreviewSnapshot, savePreviewSnapshot } from '../lib/gmail/snapshot';
 import type { GmailMessageMeta } from '../lib/gmail/types';
 import {
   applyLabels,
@@ -129,6 +130,7 @@ export default defineBackground(() => {
     },
     'gmail:disconnect': async () => {
       await disconnectGmail();
+      await clearPreviewSnapshot();
       return { ok: true };
     },
     'gmail:recent': async ({ limit }) => {
@@ -149,7 +151,14 @@ export default defineBackground(() => {
     },
     'gmail:preview': async () => {
       const settings = await getSettings();
-      return withGmailToken(async (token) => ({ rows: await previewRecent(token, settings) }));
+      return withGmailToken(async (token) => {
+        const rows = await previewRecent(token, settings);
+        await savePreviewSnapshot(rows, {
+          lookbackDays: settings.gmail.lookbackDays,
+          maxMessages: settings.gmail.maxMessages,
+        });
+        return { rows };
+      });
     },
     'gmail:apply': async ({ rows }) => {
       const settings = await getSettings();
