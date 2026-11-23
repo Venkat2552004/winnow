@@ -1,3 +1,5 @@
+import type { BlurCause } from './decision';
+import { isPostType, POST_TYPE_LABEL } from './taxonomy';
 import type { PostScore } from '../winnow/types';
 import { hsl, scoreHue, signalFor } from '../ui/generative';
 
@@ -30,13 +32,15 @@ const STYLES = `
   justify-content: center;
   padding: 16px;
   border-radius: 10px;
-  background: radial-gradient(120% 120% at 50% 0%, rgba(10, 13, 19, 0.32), rgba(10, 13, 19, 0.64));
-  backdrop-filter: blur(2px);
+  background:
+    radial-gradient(130% 110% at 50% -10%, hsl(var(--jev-accent, 220) 70% 40% / 0.2), transparent 62%),
+    rgba(8, 11, 16, 0.55);
+  backdrop-filter: blur(3px) saturate(0.9);
   cursor: pointer;
 }
 
 .${OVERLAY_CLASS}:focus-visible {
-  outline: 2px solid hsl(var(--jev-hue, 220) 85% 62%);
+  outline: 2px solid hsl(var(--jev-accent, 220) 85% 62%);
   outline-offset: -2px;
 }
 
@@ -45,29 +49,58 @@ const STYLES = `
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  width: min(340px, 100%);
-  padding: 16px 18px;
-  border-radius: 16px;
+  width: min(360px, 100%);
+  border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 45%),
-    rgba(14, 17, 22, 0.93);
-  border: 1px solid hsl(var(--jev-hue, 220) 80% 60% / 0.35);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 46%),
+    rgba(13, 16, 22, 0.94);
+  border: 1px solid hsl(var(--jev-accent, 220) 70% 60% / 0.3);
   box-shadow:
-    0 18px 50px rgba(0, 0, 0, 0.45),
-    0 0 0 1px hsl(var(--jev-hue, 220) 80% 60% / 0.12);
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px hsl(var(--jev-accent, 220) 70% 60% / 0.1),
+    0 0 42px hsl(var(--jev-accent, 220) 80% 55% / 0.16);
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e8eef8;
   text-align: left;
+  animation: jev-card-in 220ms cubic-bezier(0.21, 1, 0.35, 1) both;
+}
+
+@keyframes jev-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .${OVERLAY_CLASS}__glow {
   position: absolute;
-  inset: -40%;
+  inset: -45%;
   pointer-events: none;
   background:
-    radial-gradient(50% 50% at 18% 0%, hsl(var(--jev-hue, 220) 85% 62% / 0.35), transparent 70%),
-    radial-gradient(50% 50% at 92% 18%, hsl(var(--jev-hue-2, 260) 85% 62% / 0.25), transparent 70%);
-  filter: blur(18px);
+    radial-gradient(46% 46% at 14% -6%, hsl(var(--jev-accent, 220) 85% 62% / 0.4), transparent 68%),
+    radial-gradient(46% 46% at 96% 14%, hsl(var(--jev-accent-2, 260) 85% 62% / 0.26), transparent 68%);
+  filter: blur(22px);
+}
+
+.${OVERLAY_CLASS}__card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.09) 50%, transparent 62%);
+  transform: translateX(-60%);
+  animation: jev-sheen 900ms ease-out 140ms both;
+}
+
+@keyframes jev-sheen {
+  to {
+    transform: translateX(60%);
+  }
 }
 
 .${OVERLAY_CLASS}__content {
@@ -75,7 +108,8 @@ const STYLES = `
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 12px;
+  padding: 15px 17px 14px;
 }
 
 .${OVERLAY_CLASS}__top {
@@ -86,53 +120,117 @@ const STYLES = `
 
 .${OVERLAY_CLASS}__ring {
   flex: 0 0 auto;
+  filter: drop-shadow(0 0 10px hsl(var(--jev-score-hue, 220) 85% 55% / 0.35));
 }
 
 .${OVERLAY_CLASS}__meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
 }
 
-.${OVERLAY_CLASS}__badge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+.${OVERLAY_CLASS}__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 750;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
-  color: hsl(var(--jev-hue, 220) 85% 74%);
+  color: hsl(var(--jev-accent, 220) 90% 80%);
+  background: hsl(var(--jev-accent, 220) 70% 45% / 0.18);
+  border: 1px solid hsl(var(--jev-accent, 220) 70% 60% / 0.3);
+  white-space: nowrap;
+}
+
+.${OVERLAY_CLASS}__eyebrow::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: hsl(var(--jev-accent, 220) 90% 65%);
+  box-shadow: 0 0 6px hsl(var(--jev-accent, 220) 90% 65% / 0.9);
+}
+
+.${OVERLAY_CLASS}__title {
+  font-size: 14.5px;
+  font-weight: 680;
+  letter-spacing: -0.01em;
+  color: #f2f6fc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .${OVERLAY_CLASS}__score {
-  font-size: 12px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: #8b98ab;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.${OVERLAY_CLASS}__sig {
+  flex: 0 0 auto;
+  opacity: 0.75;
+}
+
 .${OVERLAY_CLASS}__reason {
   margin: 0;
+  padding-top: 11px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: #a9b6c8 !important;
   font-family: inherit !important;
 }
 
+.${OVERLAY_CLASS}__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .${OVERLAY_CLASS}__cta {
-  align-self: flex-start;
-  padding: 6px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 680;
   color: #fff;
   background: linear-gradient(
     135deg,
-    hsl(var(--jev-hue, 220) 85% 60%),
-    hsl(var(--jev-hue-2, 260) 85% 60%)
+    hsl(var(--jev-accent, 220) 85% 60%),
+    hsl(var(--jev-accent-2, 260) 85% 60%)
   );
-  box-shadow: 0 6px 18px hsl(var(--jev-hue, 220) 85% 50% / 0.35);
+  box-shadow: 0 8px 22px hsl(var(--jev-accent, 220) 85% 50% / 0.34);
+}
+
+.${OVERLAY_CLASS}__cta::after {
+  content: '→';
+  font-size: 12px;
+  transition: transform 140ms ease;
+}
+
+.${OVERLAY_CLASS}:hover .${OVERLAY_CLASS}__cta::after {
+  transform: translateX(2px);
+}
+
+.${OVERLAY_CLASS}__hint {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6f7c8f;
+  white-space: nowrap;
 }
 
 .${BADGE_CLASS} {
@@ -148,6 +246,7 @@ const STYLES = `
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 10px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: hsl(var(--jev-hue, 220) 85% 78%);
   background: rgba(14, 17, 22, 0.85);
   border: 1px solid hsl(var(--jev-hue, 220) 80% 60% / 0.4);
@@ -193,6 +292,13 @@ const STYLES = `
   background: #46d17a;
   box-shadow: 0 0 10px rgba(70, 209, 122, 0.8);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .${OVERLAY_CLASS}__card,
+  .${OVERLAY_CLASS}__card::after {
+    animation: none !important;
+  }
+}
 `;
 
 export function injectStyles(): void {
@@ -208,7 +314,7 @@ function svgEl<K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameM
 }
 
 function buildRing(score: number, hue: number): SVGSVGElement {
-  const size = 46;
+  const size = 48;
   const stroke = 4;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -248,7 +354,7 @@ function buildRing(score: number, hue: number): SVGSVGElement {
   text.setAttribute('y', '50%');
   text.setAttribute('text-anchor', 'middle');
   text.setAttribute('dominant-baseline', 'central');
-  text.setAttribute('font-size', String(size * 0.32));
+  text.setAttribute('font-size', String(size * 0.31));
   text.setAttribute('font-weight', '700');
   text.setAttribute('fill', '#e8eef8');
   text.textContent = String(Math.round(clamped));
@@ -259,26 +365,27 @@ function buildRing(score: number, hue: number): SVGSVGElement {
 
 function buildSignal(seed: string, hue: number): SVGSVGElement {
   const signal = signalFor(seed, hue);
-  const size = 22;
+  const size = 26;
   const bars = signal.bars.slice(0, 5);
   const slot = size / bars.length;
-  const barWidth = Math.max(1.5, slot * 0.5);
+  const barWidth = Math.max(1.5, slot * 0.46);
 
   const svg = svgEl('svg');
   svg.setAttribute('width', String(size));
   svg.setAttribute('height', String(size));
   svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
   svg.setAttribute('aria-hidden', 'true');
+  svg.classList.add(`${OVERLAY_CLASS}__sig`);
 
   bars.forEach((value, index) => {
-    const height = Math.max(2, value * size * 0.9);
+    const height = Math.max(2, value * size * 0.88);
     const rect = svgEl('rect');
     rect.setAttribute('x', String(index * slot + (slot - barWidth) / 2));
     rect.setAttribute('y', String((size - height) / 2));
     rect.setAttribute('width', String(barWidth));
     rect.setAttribute('height', String(height));
     rect.setAttribute('rx', String(barWidth / 2));
-    rect.setAttribute('fill', hsl(hue, 82, 64, 0.9));
+    rect.setAttribute('fill', hsl(hue, 82, 68, 0.9));
     svg.append(rect);
   });
 
@@ -296,21 +403,64 @@ function showBadge(element: HTMLElement, score: PostScore): void {
   element.appendChild(badge);
 }
 
-function buildOverlay(score: PostScore, reveal: () => void, seed: string): HTMLElement {
+/** Human name for the post's primary label, e.g. advertisement → Advertisement. */
+function typeLabelOf(score: PostScore): string {
+  const [first] = score.labels;
+  if (isPostType(first)) return POST_TYPE_LABEL[first];
+  return first ? first.replace(/_/g, ' ') : 'Filtered post';
+}
+
+/**
+ * The accent is the reason the post is hidden, so a high-scoring category
+ * override never paints itself green — the ring keeps the true score hue.
+ */
+function causeCopy(cause: BlurCause): {
+  eyebrow: string;
+  fallbackReason: string;
+  accentHue: number;
+} {
+  if (cause === 'category') {
+    return {
+      eyebrow: 'Hidden by category',
+      fallbackReason: 'You chose to always blur this post type.',
+      accentHue: 268,
+    };
+  }
+  return {
+    eyebrow: 'Low value',
+    fallbackReason: 'Scored below your blur threshold.',
+    accentHue: 8,
+  };
+}
+
+function buildOverlay(
+  score: PostScore,
+  reveal: () => void,
+  seed: string,
+  cause: BlurCause,
+): HTMLElement {
   const signal = signalFor(seed);
   const hue = scoreHue(score.score);
+  const typeLabel = typeLabelOf(score);
+  const copy = causeCopy(cause);
+  const accentHue = copy.accentHue;
 
   const overlay = document.createElement('div');
   overlay.className = OVERLAY_CLASS;
   overlay.setAttribute('role', 'button');
   overlay.tabIndex = 0;
-  overlay.style.setProperty('--jev-hue', String(Math.round(hue)));
-  overlay.setAttribute('aria-label', `Low value post, score ${Math.round(score.score)} out of 100. Activate to reveal.`);
+  overlay.dataset.jevCause = cause;
+  overlay.style.setProperty('--jev-accent', String(Math.round(accentHue)));
+  overlay.setAttribute(
+    'aria-label',
+    `${copy.eyebrow}: ${typeLabel}, score ${Math.round(score.score)} out of 100. Activate to reveal.`,
+  );
 
   const card = document.createElement('div');
   card.className = `${OVERLAY_CLASS}__card`;
-  card.style.setProperty('--jev-hue', String(Math.round(hue)));
-  card.style.setProperty('--jev-hue-2', String(Math.round(signal.hue2)));
+  card.style.setProperty('--jev-accent', String(Math.round(accentHue)));
+  card.style.setProperty('--jev-accent-2', String(Math.round(signal.hue2)));
+  card.style.setProperty('--jev-score-hue', String(Math.round(hue)));
 
   const glow = document.createElement('div');
   glow.className = `${OVERLAY_CLASS}__glow`;
@@ -324,27 +474,38 @@ function buildOverlay(score: PostScore, reveal: () => void, seed: string): HTMLE
   const meta = document.createElement('div');
   meta.className = `${OVERLAY_CLASS}__meta`;
 
-  const badge = document.createElement('span');
-  badge.className = `${OVERLAY_CLASS}__badge`;
-  badge.textContent = 'Low value';
+  const eyebrow = document.createElement('span');
+  eyebrow.className = `${OVERLAY_CLASS}__eyebrow`;
+  eyebrow.textContent = copy.eyebrow;
+
+  const title = document.createElement('span');
+  title.className = `${OVERLAY_CLASS}__title`;
+  title.textContent = typeLabel;
 
   const scoreLabel = document.createElement('span');
   scoreLabel.className = `${OVERLAY_CLASS}__score`;
-  const label = score.labels[0]?.replace(/_/g, ' ');
-  scoreLabel.textContent = `${Math.round(score.score)}/100${label ? ` · ${label}` : ''}`;
+  scoreLabel.textContent = `Value score ${Math.round(score.score)}/100`;
 
-  meta.append(badge, scoreLabel);
+  meta.append(eyebrow, title, scoreLabel);
   top.append(buildRing(score.score, hue), meta, buildSignal(seed, hue));
 
-  const reason = document.createElement('div');
+  const reason = document.createElement('p');
   reason.className = `${OVERLAY_CLASS}__reason`;
-  reason.textContent = score.reason || 'Filtered by Winnow';
+  reason.textContent = score.reason || copy.fallbackReason;
+
+  const footer = document.createElement('div');
+  footer.className = `${OVERLAY_CLASS}__footer`;
 
   const cta = document.createElement('span');
   cta.className = `${OVERLAY_CLASS}__cta`;
   cta.textContent = 'Reveal post';
 
-  content.append(top, reason, cta);
+  const hint = document.createElement('span');
+  hint.className = `${OVERLAY_CLASS}__hint`;
+  hint.textContent = 'Enter to show';
+
+  footer.append(cta, hint);
+  content.append(top, reason, footer);
   card.append(glow, content);
   overlay.append(card);
 
@@ -367,10 +528,14 @@ export function blurPost(
   score: PostScore,
   onReveal: () => void,
   seed = 'jev',
+  cause: BlurCause = 'score',
 ): boolean {
   if (element.hasAttribute(REVEALED_ATTR)) return false;
   element.classList.add(SCORED_CLASS);
-  if (element.querySelector(`.${OVERLAY_CLASS}`)) return false;
+
+  const existing = element.querySelector<HTMLElement>(`.${OVERLAY_CLASS}`);
+  if (existing && existing.dataset.jevCause === cause) return false;
+  existing?.remove();
 
   element.classList.add(BLUR_CLASS);
 
@@ -384,6 +549,7 @@ export function blurPost(
       onReveal();
     },
     seed,
+    cause,
   );
 
   element.appendChild(overlay);

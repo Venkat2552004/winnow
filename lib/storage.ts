@@ -4,6 +4,12 @@ import {
   type EmailCategory,
   type EmailLabelPresetId,
 } from './winnow/types';
+import {
+  LOW_VALUE_POST_TYPES,
+  VALUE_POST_TYPES,
+  type LinkedInPresetId,
+  type PostType,
+} from './linkedin/taxonomy';
 import { deepMerge, type DeepPartial } from './types';
 
 export interface Settings {
@@ -46,11 +52,17 @@ export interface Settings {
   };
   linkedin: {
     enabled: boolean;
-    /** Posts scoring below this are blurred. */
+    /** Posts scoring below this are blurred when their type is in neither list. */
     threshold: number;
     paused: boolean;
     /** Show an on-page diagnostic pill and verbose logs. */
     debug: boolean;
+    /** Preset used to seed the category selection. */
+    preset: LinkedInPresetId;
+    /** Post types always blurred, regardless of score. */
+    blurCategories: PostType[];
+    /** Post types never blurred, regardless of score. */
+    keepCategories: PostType[];
   };
   consent: {
     dataSharingAccepted: boolean;
@@ -94,6 +106,9 @@ export const DEFAULT_SETTINGS: Settings = {
     threshold: 35,
     paused: false,
     debug: false,
+    preset: 'balanced',
+    blurCategories: [...LOW_VALUE_POST_TYPES],
+    keepCategories: [...VALUE_POST_TYPES],
   },
   consent: {
     dataSharingAccepted: false,

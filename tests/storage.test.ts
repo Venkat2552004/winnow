@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LOW_VALUE_POST_TYPES, VALUE_POST_TYPES } from '../lib/linkedin/taxonomy';
 import {
   DEFAULT_SETTINGS,
   getSettings,
@@ -41,6 +42,29 @@ describe('settings', () => {
 
     const reloaded = await getSettings();
     expect(reloaded.gmail.priorityThreshold).toBe(80);
+  });
+
+  it('defaults the LinkedIn category lists to the balanced preset', async () => {
+    const settings = await getSettings();
+    expect(settings.linkedin.preset).toBe('balanced');
+    expect(settings.linkedin.blurCategories).toEqual([...LOW_VALUE_POST_TYPES]);
+    expect(settings.linkedin.keepCategories).toEqual([...VALUE_POST_TYPES]);
+  });
+
+  it('persists LinkedIn category list changes', async () => {
+    const updated = await updateSettings({
+      linkedin: {
+        preset: 'custom',
+        blurCategories: ['advertisement'],
+        keepCategories: ['resource'],
+      },
+    });
+    expect(updated.linkedin.preset).toBe('custom');
+    expect(updated.linkedin.blurCategories).toEqual(['advertisement']);
+
+    const reloaded = await getSettings();
+    expect(reloaded.linkedin.blurCategories).toEqual(['advertisement']);
+    expect(reloaded.linkedin.keepCategories).toEqual(['resource']);
   });
 
   it('remembers an explicit mock choice', async () => {
