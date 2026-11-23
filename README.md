@@ -3,7 +3,7 @@
 A Chrome extension that does two things:
 
 1. **Gmail organizer** — auto-labels recent mail by category, builds a priority view, and helps you unsubscribe from and archive bulk senders.
-2. **LinkedIn de-slop** — scores feed posts for value and blurs the low-value ones behind a click-to-reveal overlay. It keeps jobs, technical breakdowns, actionable advice, self-improvement, resources, industry insight, case studies, personal lessons, and substantive discussion. It blurs ads, achievements without a lesson, generic stories, engagement bait, memes, off-topic posts, and low-effort posts.
+2. **LinkedIn de-slop** — scores feed posts for value and blurs the ones you don't want behind a click-to-reveal overlay. Three presets keep jobs, technical breakdowns, actionable advice, self-improvement, and resources while hiding ads, engagement bait, memes, off-topic posts, and low-effort content; every post type can also be pinned to an always-blur or always-keep list that overrides the score.
 
 Both use the **Roar AI gateway** (OpenAI-compatible, via the official OpenAI SDK) as the primary classifier, with **Sarvam** as a fallback for low-confidence results. **Mock mode** uses deterministic local heuristics, so every feature works end to end without a network call.
 
@@ -96,7 +96,9 @@ The client secret is not needed — Winnow uses the implicit flow.
 
 ### LinkedIn
 
-- **Blur threshold** — default 35. Higher blurs more.
+- **Category presets** — Balanced, Focus, or Chill. Each seeds an always-blur and always-keep list.
+- **Always blur / Always keep** — per-post-type overrides. A kept type is never blurred, even at a low score; a blurred type is always blurred; types in neither list use the score threshold.
+- **Blur threshold** — default 35. Applies only to types that are in neither list.
 - **Pause** — stops scoring without disabling the extension.
 - **Debug overlay** — shows a live diagnostic pill on LinkedIn.
 
@@ -106,11 +108,15 @@ Keys are stored in `chrome.storage.local` and never committed. `.env` is optiona
 
 ### Gmail organizer
 
-1. Settings → Gmail → **Preview classification** — classifies recent mail without writing anything.
-2. Review the category and priority score for each message.
+The toolbar popup has three tabs: **Priority**, **Organize**, and **Feed**.
+
+1. **Organize** tab → **Scan inbox** — classifies recent mail without writing anything.
+2. Review the groups by label. Each group shows the count, the Gmail label name, sample subjects, and an **Open** link that jumps into Gmail filtered by that label.
 3. **Apply labels** — creates the selected category labels and applies them with `batchModify`. Re-running only changes what differs.
 
-The popup shows the top priority mail (score ≥ your threshold) with a direct link into Gmail.
+A scan is snapshotted for 30 minutes, so closing the popup does not lose the result. The same flow is also available in Settings → Gmail → **Preview classification**.
+
+The **Priority** tab shows the top priority mail (score ≥ your threshold) with a direct link into Gmail.
 
 ### Email labels
 
@@ -134,7 +140,22 @@ Labels are flat by default (`Security`, `Finance/Bank`, `Offers`, …). Add a pr
 
 ### LinkedIn
 
-Scroll the feed. Posts scoring below the threshold are blurred behind a reveal card showing the score ring, the post type, the reason, and a **Reveal post** button. After revealing, a compact `Winnow <score>` badge stays on the post. The popup shows today's scored / blurred / revealed counts.
+Scroll the feed. Posts Winnow hides are blurred behind a reveal card showing the score ring, the post type, the reason, and a **Reveal post** button. After revealing, a compact `Winnow <score>` badge stays on the post. The **Feed** tab shows today's scored / blurred / revealed counts.
+
+The card says *why* it was hidden, and the ring always shows the true score:
+
+| Card | Accent | Meaning |
+|---|---|---|
+| **Hidden by category** | violet | You put this post type in the always-blur list. It hides even at a high score. |
+| **Low value** | red | The type is in neither list and the score fell below your threshold. |
+
+Settings → **LinkedIn de-slop** lets you pick a preset and fine-tune it:
+
+- **Balanced** — blur ads, bait, memes, off-topic, and low-effort posts (the default).
+- **Focus** — also blur personal lessons, discussion, and uncategorized posts.
+- **Chill** — only blur ads, bait, low-effort, and off-topic posts.
+
+Below the presets, every post type can be moved to **Always blur** or **Always keep**. Keep wins if a type somehow ends up in both lists; types in neither list use the **Blur below** score threshold. Deciding a post is a single function (`lib/linkedin/decision.ts`): keep list, then blur list, then the score.
 
 Winnow classifies each post into one of these types before scoring it:
 
@@ -185,7 +206,7 @@ The E2E test loads the built extension in Chromium and checks the popup. On Linu
 ```
 entrypoints/
   background.ts        message router, AI orchestration, Gmail jobs
-  popup/               quick toggles, priority inbox, diagnostics
+  popup/               tabs (priority, organize, feed), toggles, diagnostics
   options/             keys, OAuth client ID, onboarding, cleanup
   gmail.content/       Gmail content script shell
   linkedin.content/    LinkedIn content script
@@ -193,8 +214,8 @@ lib/
   winnow/              typed API client (live + mock) and contracts
   roar/                OpenAI SDK client for the Roar AI gateway
   llm/                 shared prompts and Sarvam fallback client
-  gmail/               API, auth, labels, organizer, unsubscribe, cleanup
-  linkedin/            detection, extraction, heuristics, overlay
+  gmail/               API, auth, labels, organizer, snapshot, unsubscribe, cleanup
+  linkedin/            detection, extraction, heuristics, decision, overlay
   pipeline.ts          heuristic → Winnow → Sarvam routing
   cache.ts             IndexedDB cache with eviction
   queue.ts             concurrency + retry
