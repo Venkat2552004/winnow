@@ -9,6 +9,7 @@ import { TaskQueue } from '../queue';
 import type { Settings } from '../storage';
 import { batchModify, getMessageMeta, listMessageIds } from './api';
 import { ensureLabels } from './labels';
+import { PRIORITY_KEY } from './priority';
 import type {
   GmailMessageMeta,
   OrganizeRow,
@@ -17,7 +18,6 @@ import type {
 } from './types';
 
 const LABELED_KEY = 'jev.gmail.labeled.v1';
-const PRIORITY_KEY = 'jev.gmail.priority.v1';
 const MAX_LABELED_ENTRIES = 3000;
 const MAX_PRIORITY_ENTRIES = 1000;
 
@@ -157,7 +157,8 @@ export async function applyLabels(
   return { labeled, skipped, total: rows.length };
 }
 
-async function recordPriority(rows: OrganizeRow[]): Promise<void> {
+/** Records the priority view for an already-classified batch. */
+export async function recordPriority(rows: OrganizeRow[]): Promise<void> {
   const state = await readPriorityState();
   const now = Date.now();
 

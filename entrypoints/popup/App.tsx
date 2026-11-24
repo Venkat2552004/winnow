@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { GmailStatus, PriorityEntry } from '../../lib/gmail/types';
+import { onPriorityChanged } from '../../lib/gmail/priority';
 import { LINKEDIN_PRESETS } from '../../lib/linkedin/taxonomy';
 import { CATEGORY_SHORT } from '../../lib/winnow/types';
 import {
@@ -50,6 +51,7 @@ export default function App() {
   const [version, setVersion] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
   const [priority, setPriority] = useState<PriorityEntry[] | null>(null);
+  const [priorityLoading, setPriorityLoading] = useState(false);
   const [gmailStatus, setGmailStatus] = useState<GmailStatus | null>(null);
   const [tab, setTab] = useState<Tab>('priority');
 
@@ -74,15 +76,26 @@ export default function App() {
     void sendMessage({ type: 'gmail:status' })
       .then(setGmailStatus)
       .catch(() => undefined);
-    return onSettingsChanged(setSettings);
+    const stopSettings = onSettingsChanged((next) => {
+      setSettings(next);
+      void loadPriority();
+    });
+    const stopPriority = onPriorityChanged(() => void loadPriority());
+    return () => {
+      stopSettings();
+      stopPriority();
+    };
   }, []);
 
-  async function loadPriority(): Promise<void> {
+  async function loadPriority(refresh = false): Promise<void> {
+    setPriorityLoading(true);
     try {
-      const result = await sendMessage({ type: 'gmail:priority' });
+      const result = await sendMessage({ type: 'gmail:priority', refresh });
       setPriority(result.items);
-    } catch {
-      setPriority([]);
+    } catch (error) {
+      setToast({ kind: 'err', text: errorMessage(error) });
+    } finally {
+      setPriorityLoading(false);
     }
   }
 
@@ -297,43 +310,43 @@ export default function App() {
             </label>
           </div>
 
+          <div className="divider" />
+          <div className="row">
+            <span className="small muted">Priority inbox</span>
+            <button
+              className="btn"
+              style={{ padding: '2px 8px' }}
+              onClick={() => void loadPriority(true)}
+              disabled={priorityLoading}
+            >
+              {priorityLoading ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+
           {priority && priority.length > 0 && (
-            <>
-              <div className="divider" />
-              <div className="row">
-                <span className="small muted">Priority inbox</span>
-                <button
-                  className="btn"
-                  style={{ padding: '2px 8px' }}
-                  onClick={() => void loadPriority()}
-                >
-                  Refresh
-                </button>
-              </div>
-              <div className="stack" style={{ gap: 2 }}>
-                {priority.slice(0, 5).map((item) => {
-                  const hue = categoryHue(item.category);
-                  return (
-                    <a
-                      key={item.id}
-                      className="priority-row"
-                      style={vars({ '--row-hue': hue })}
-                      href={`https://mail.google.com/mail/u/0/#all/${item.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={item.reason}
-                    >
-                      <span className="dot" style={vars({ '--dot-hue': hue })} />
-                      <span className="priority-row__subject">{item.subject}</span>
-                      <span className="badge" data-hue style={vars({ '--badge-hue': hue })}>
-                        {CATEGORY_SHORT[item.category]}
-                      </span>
-                      <ScoreRing score={item.priority} size={28} hue={hue} />
-                    </a>
-                  );
-                })}
-              </div>
-            </>
+            <div className="stack" style={{ gap: 2 }}>
+              {priority.slice(0, 5).map((item) => {
+                const hue = categoryHue(item.category);
+                return (
+                  <a
+                    key={item.id}
+                    className="priority-row"
+                    style={vars({ '--row-hue': hue })}
+                    href={`https://mail.google.com/mail/u/0/#all/${item.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={item.reason}
+                  >
+                    <span className="dot" style={vars({ '--dot-hue': hue })} />
+                    <span className="priority-row__subject">{item.subject}</span>
+                    <span className="badge" data-hue style={vars({ '--badge-hue': hue })}>
+                      {CATEGORY_SHORT[item.category]}
+                    </span>
+                    <ScoreRing score={item.priority} size={28} hue={hue} />
+                  </a>
+                );
+              })}
+            </div>
           )}
 
           {priority && priority.length === 0 && (

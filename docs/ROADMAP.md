@@ -24,7 +24,7 @@
 Today the Gmail flow is:
 
 1. **Load recent mail** — previews 10 messages only.
-2. **Preview classification** — fetches up to `maxMessages` (UI max 1,000) from the last `lookbackDays` (UI max 90).
+2. **Preview classification** — fetches up to `maxMessages` (UI max 1,000) from the last `lookbackDays` (UI max 90). The popup's Priority → **Refresh** re-runs this same window and records the result without applying labels.
 3. **Apply labels** — applies labels only to the previewed rows.
 
 So the current ceiling is **1,000 messages from the last 90 days per run**. Older mail is never fetched, and mail beyond the first 1,000 in the window is skipped.

@@ -21,9 +21,9 @@ Pick 4–6 and fill in the measured numbers after running the eval plan in `docs
 - Designed a 17-type LinkedIn post taxonomy with a value score, three presets, and per-type always-blur / always-keep overrides that take precedence over the score threshold.
 - Built a provider-routing pipeline with Roar AI as the primary classifier, Sarvam as a low-confidence fallback, deterministic local heuristics, mock mode, retries, and IndexedDB caching.
 - Hardened OAuth token refresh, Gmail rate-limit handling, cache versioning, label migration, and service-worker restarts; added a risk register and test matrix for the highest-risk failure modes.
-- Built a Vitest suite of **111 tests across 15 files** and a golden-fixture eval harness; achieved **100% heuristic accuracy on 23 curated email fixtures** and **22 curated LinkedIn fixtures** (starter baseline).
+- Built a Vitest suite of **119 tests across 17 files** and a golden-fixture eval harness; achieved **100% heuristic accuracy on 23 curated email fixtures** and **22 curated LinkedIn fixtures** (starter baseline).
 - Added a CI quality gate for type-check, unit/integration tests, coverage, heuristic eval, production build, Playwright E2E, and secret scanning.
-- Reached **54.5% line coverage** in the starter suite, with **97%+ on LinkedIn heuristics**, **100% on the LinkedIn decision engine**, and **100% on cleanup/labels**; the plan targets 80%+ on pure logic.
+- Reached **58.6% line coverage** in the starter suite, with **97%+ on LinkedIn heuristics**, **100% on the LinkedIn decision engine**, **100% on cleanup/labels**, and **100% on the priority store**; the plan targets 80%+ on pure logic.
 - Achieved **0 false positives and 0 false negatives** on the 22-post starter fixture set under the Balanced preset, scoring keep/blur through the shipped decision engine rather than a bare score comparison.
 
 ---
@@ -40,7 +40,7 @@ Pick 4–6 and fill in the measured numbers after running the eval plan in `docs
 | Gmail preview (200 messages) | Not measured | ≤ 60 s cold / ≤ 20 s warm | Performance test |
 | Cache hit rate | Not measured | ≥ 50% on repeat scroll | Instrumented run |
 | Cost per 1,000 classifications | Not measured | Set provider budget | Provider usage |
-| Test coverage | **54.5% lines** (starter) | 80%+ on pure logic | Vitest |
+| Test coverage | **58.6% lines** (starter) | 80%+ on pure logic | Vitest |
 | Critical accessibility violations | Not measured | 0 | axe-core |
 
 > The starter fixture numbers are small and curated to the heuristics. Do not present them as general accuracy. Expand the datasets and run the AI eval before quoting them externally.

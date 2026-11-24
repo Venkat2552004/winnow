@@ -9,7 +9,7 @@
 ## 0. Current baseline (informal)
 
 - Live Roar smoke test: 9/9 representative LinkedIn posts classified into the expected type (job, technical breakdown, advice, ad, achievement, generic story, off-topic, humor, hashtag-only).
-- Starter Vitest suite: **111 tests across 15 files**, all passing.
+- Starter Vitest suite: **119 tests across 17 files**, all passing.
 - Starter heuristic eval on curated fixtures:
   - Email: **100% accuracy (23/23)**, **macro-F1 1.000**.
   - LinkedIn: **100% type accuracy (22/22)**, **100% keep/blur accuracy (22/22)**, 0 false positives, 0 false negatives.
@@ -119,6 +119,12 @@
 | GM-LBL-07 | Priority label | Applied at/above threshold only | P0 |
 | GM-LBL-08 | Label creation 409 | Existing label reused | P1 |
 | GM-LBL-09 | Batch modify 200 IDs | Success | P1 |
+| GM-PRI-01 | Apply labels populates the priority store | Rows stored, sorted by score then recency | P0 |
+| GM-PRI-02 | Refresh from an empty store | Re-scans, records, and lists results without labeling | P0 |
+| GM-PRI-03 | Same message applied twice | One entry, newest classification wins | P1 |
+| GM-PRI-04 | Category disabled / threshold raised | Row disappears from the filtered list | P1 |
+| GM-PRI-05 | Priority store written externally | Open popup reloads without a click | P1 |
+| GM-PRI-06 | Background worker unavailable | Error toast, list not cleared | P0 |
 | GM-CLN-01 | Aged offers/newsletters | Candidates listed | P0 |
 | GM-CLN-02 | Important category | Never listed | P0 |
 | GM-CLN-03 | Starred/important mail | Never listed | P0 |
@@ -211,6 +217,7 @@
 | UI-POP-01 | Popup status | Version, mode, fallback, Gmail | P0 |
 | UI-POP-02 | Priority inbox | Top items link to Gmail | P0 |
 | UI-POP-03 | Error states | Actionable messages | P0 |
+| UI-POP-04 | Priority refresh | Re-scans and updates the list, works from the empty state, shows errors as a toast | P0 |
 | UI-OPT-01 | Onboarding/consent | Persists, hides after accept | P0 |
 | UI-OPT-02 | Preset selection | Updates categories/cleanup/threshold | P0 |
 | UI-OPT-03 | Category toggles | Save and apply correctly | P0 |

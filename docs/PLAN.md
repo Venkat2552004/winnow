@@ -45,9 +45,9 @@ jev/
 ├── .env.example
 ├── entrypoints/
 │   ├── background.ts              # service worker: message router, queues, API calls
-│   ├── popup/                     # global toggles, thresholds, stats
+│   ├── popup/                     # Priority / Organize / Feed tabs, toggles, stats
 │   ├── options/                   # keys, OAuth client ID, test-connection, cache reset
-│   ├── gmail.content/             # content script + Winnow panel on mail.google.com
+│   ├── gmail.content/             # content script shell on mail.google.com
 │   └── linkedin.content/          # content script + blur overlay on linkedin.com
 ├── lib/
 │   ├── winnow/client.ts           # typed AI client (real + mock)
@@ -55,6 +55,9 @@ jev/
 │   ├── llm/sarvam.ts              # fallback client (OpenAI-compatible)
 │   ├── gmail/auth.ts              # OAuth flow, token cache, silent re-auth
 │   ├── gmail/api.ts               # Gmail REST wrapper (list/get/batchModify/labels)
+│   ├── gmail/organizer.ts         # preview, apply labels, record the priority view
+│   ├── gmail/priority.ts          # priority store key + change subscription
+│   ├── gmail/snapshot.ts          # 30-minute preview snapshot
 │   ├── gmail/unsubscribe.ts       # List-Unsubscribe parsing + one-click POST
 │   ├── linkedin/dom.ts            # post detection + text extraction
 │   ├── linkedin/heuristics.ts     # cheap pre-filter rules
@@ -200,6 +203,11 @@ Authorization: Bearer <jev_key>
 
 **Priority view:** `Priority` label applied when `priority >= 70` (which includes every ★ category by floor). The popup's **Priority** tab lists top priority threads (subject, sender, age, category, reason). No surgery on Gmail's own DOM.
 
+- **Data source.** Results live in `chrome.storage.local` under `jev.gmail.priority.v1` (`lib/gmail/priority.ts` owns the key). `recordPriority()` writes them; `getPriorityItems()` reads them sorted by score then recency.
+- **Writers.** `applyLabels()` records every applied row. The `gmail:priority` request accepts `{ refresh: true }`, which re-runs `previewRecent()` and records the result **without applying any label**, so the popup can refresh from the empty state.
+- **Readers.** `gmail:priority` filters the stored rows by your enabled categories and threshold. The popup loads once on mount, reloads on settings changes, and subscribes to the priority store, so applying labels from Organize or Settings lands without reopening the popup.
+- **Errors.** A failed read surfaces a toast rather than an empty list, so a transport failure is never mistaken for "no priority mail".
+
 **Organize tab:** the popup's **Organize** tab scans recent mail, groups the preview rows by Winnow label with counts and sample subjects, links each group into Gmail's label search, and applies labels without opening Settings. The last scan is snapshotted for 30 minutes so closing the popup does not lose it.
 
 **Safety:** v1 only *adds* labels. No auto-archive, no auto-delete. Cleanup's "archive all" is manual, confirmed, and refuses ★ categories.
@@ -257,7 +265,7 @@ Authorization: Bearer <jev_key>
 | **1 — AI layer** ✅ | AI client + mock mode, Sarvam fallback, IndexedDB cache, concurrency queue, confidence routing, "Test connection" in options. | 1 d |
 | **2 — LinkedIn** ✅ | Post detection, extraction, heuristics, scoring queue, blur overlay + reveal, threshold, pause, stats. Works fully in mock mode. | 1.5 d |
 | **3 — Gmail auth + read** ✅ | OAuth via `launchWebAuthFlow`, token cache + silent re-auth, Gmail REST wrapper, metadata fetch. Options shows connected account. | 1 d |
-| **4 — Gmail classify + label** ✅ | Pre-filter, AI classification, label creation, `batchModify`, idempotency, priority panel. | 1.5 d |
+| **4 — Gmail classify + label** ✅ | Pre-filter, AI classification, label creation, `batchModify`, idempotency, priority panel with refresh, store-driven reloads. | 1.5 d |
 | **5 — Unsubscribe + cleanup** ✅ | `List-Unsubscribe` parsing, one-click POST + optional permission, mailto fallback, bulk-sender aggregation, archive-all with confirmation. | 1 d |
 | **6 — Polish** ✅ | Error/rate-limit states, cache eviction, consent notice, README + manual test checklist. | 1 d |
 | **7 — Generative identity** ✅ | Seeded signal marks, aurora headers, category hues, score rings, sender avatars, LinkedIn overlay redesign. | 1 d |

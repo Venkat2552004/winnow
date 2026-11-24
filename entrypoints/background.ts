@@ -16,6 +16,7 @@ import {
   clearOrganizerState,
   getPriorityItems,
   previewRecent,
+  recordPriority,
 } from '../lib/gmail/organizer';
 import { scanUnsubscribes } from '../lib/gmail/senders';
 import { performUnsubscribe } from '../lib/gmail/unsubscribe';
@@ -164,8 +165,12 @@ export default defineBackground(() => {
       const settings = await getSettings();
       return withGmailToken(async (token) => applyLabels(token, rows, settings));
     },
-    'gmail:priority': async () => {
+    'gmail:priority': async ({ refresh }) => {
       const settings = await getSettings();
+      if (refresh && settings.gmail.enabled) {
+        const rows = await withGmailToken((token) => previewRecent(token, settings));
+        await recordPriority(rows);
+      }
       const enabled = new Set(settings.gmail.enabledCategories);
       const items = await getPriorityItems(50);
       return {

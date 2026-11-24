@@ -27,7 +27,7 @@ export type Request =
   | { type: 'gmail:recent'; limit?: number }
   | { type: 'gmail:preview' }
   | { type: 'gmail:apply'; rows: OrganizeRow[] }
-  | { type: 'gmail:priority' }
+  | { type: 'gmail:priority'; refresh?: boolean }
   | { type: 'gmail:reset' }
   | { type: 'gmail:unsubscribe:scan' }
   | { type: 'gmail:unsubscribe:run'; sender: UnsubscribeSender; archive: boolean }

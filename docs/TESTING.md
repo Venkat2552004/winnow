@@ -71,6 +71,11 @@ Run after a build (`npm run build`) and a reload of the extension and any open t
 - [ ] Disabling a category stops Winnow from creating or applying that label.
 - [ ] Running **Apply labels** again reports `labeled 0 · skipped N`.
 - [ ] Popup priority inbox shows the top items and links into Gmail.
+- [ ] Popup → Priority → **Refresh** re-scans mail and updates the list, including from the empty state.
+- [ ] **Refresh** shows `Refreshing…` and is disabled while the scan runs.
+- [ ] Applying labels in **Organize** updates the Priority tab without reopening the popup.
+- [ ] Changing the priority threshold or enabled categories refreshes the Priority tab.
+- [ ] If the background worker cannot answer, the Priority tab shows an error toast instead of "No priority mail yet".
 - [ ] Popup tabs render: Priority, Organize, Feed.
 - [ ] Popup → Organize → **Scan inbox** groups mail by label with counts and sample subjects.
 - [ ] The group **Open** link opens Gmail filtered by that label.

@@ -59,7 +59,7 @@ Scores use a continuous ramp: `0` is red, `50` is amber, `100` is green. The num
 
 ## Surfaces
 
-- **Popup** — aurora header, brand signal, status pills with semantic dots, priority rows with a category dot, short category label, and score ring.
+- **Popup** — aurora header, brand signal, status pills with semantic dots, and three tabs. Priority rows carry a category dot, short category label, and score ring; the Priority tab's header row holds the **Refresh** action, which is always present so an empty inbox can still be refreshed.
 - **Settings** — aurora header and onboarding card, a signal mark per section, seeded glow on the Gmail, unsubscribe, and LinkedIn cards, sender and cleanup avatars.
 - **LinkedIn** — the blur overlay uses the post's seed for its glow and signal mark, keeps the reason and a clear **Reveal post** action. Two hues are kept separate: the score ring always shows the true score colour, while the card accent shows *why* it is hidden — violet for a category override, red for a below-threshold score. After reveal, a compact `Winnow <score>` badge stays on the post.
 

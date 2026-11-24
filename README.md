@@ -116,7 +116,7 @@ The toolbar popup has three tabs: **Priority**, **Organize**, and **Feed**.
 
 A scan is snapshotted for 30 minutes, so closing the popup does not lose the result. The same flow is also available in Settings → Gmail → **Preview classification**.
 
-The **Priority** tab shows the top priority mail (score ≥ your threshold) with a direct link into Gmail.
+The **Priority** tab shows the top priority mail (score ≥ your threshold) with a direct link into Gmail. **Refresh** re-scans recent mail and updates the list in place — it never applies labels. The list also reloads itself when the organizer state changes, so applying labels from the Organize tab or Settings shows up without reopening the popup.
 
 ### Email labels
 
@@ -214,7 +214,7 @@ lib/
   winnow/              typed API client (live + mock) and contracts
   roar/                OpenAI SDK client for the Roar AI gateway
   llm/                 shared prompts and Sarvam fallback client
-  gmail/               API, auth, labels, organizer, snapshot, unsubscribe, cleanup
+  gmail/               API, auth, labels, organizer, priority store, snapshot, unsubscribe, cleanup
   linkedin/            detection, extraction, heuristics, decision, overlay
   pipeline.ts          heuristic → Winnow → Sarvam routing
   cache.ts             IndexedDB cache with eviction
@@ -264,6 +264,13 @@ Leave **Mock mode** on to use local heuristics. Sarvam is still used for posts t
 | `Gmail session expired` | Click **Connect Gmail** again — silent refresh failed. |
 | `Gmail API rate limit reached` | Wait a moment and retry; Winnow already retries once automatically. |
 | `Could not reach the Gmail API` | Reload the extension so the new host permissions apply. |
+
+### Priority tab is empty or stale
+
+- **Empty after a scan** — the list is written by **Apply labels**. Run Organize → Apply labels once, or click **Refresh**, which re-scans and records the priority view without touching Gmail labels.
+- **Stale after changing categories or threshold** — the tab reloads on its own when settings or the stored priority view change. If it doesn't, click **Refresh**.
+- **Refresh appears to hang** — it performs a full scan bounded by your lookback and max-message settings, so it takes as long as Organize → Scan inbox. The button reads `Refreshing…` and is disabled while it runs.
+- **An error toast instead of a list** — the background worker didn't answer. Reload the extension, then retry; the popup no longer mistakes a transport error for an empty inbox.
 
 ### AI errors
 
